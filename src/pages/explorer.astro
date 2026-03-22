@@ -1,0 +1,17 @@
+---
+import ExplorerView from "../components/dashboard/ExplorerView";
+import MainLayout from "../layouts/MainLayout.astro";
+import { getBrokerLabel } from "../lib/config";
+
+const brokerLabel = getBrokerLabel();
+---
+
+<MainLayout
+  title="Explorer · Artemis Pulse"
+  pageTitle="Explorer"
+  pageDescription="Lectura de queues y mensajes para debugging diario."
+  compactHeader={true}
+  brokerLabel={brokerLabel}
+>
+  <ExplorerView client:load brokerLabel={brokerLabel} />
+</MainLayout>
