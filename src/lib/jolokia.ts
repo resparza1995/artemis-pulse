@@ -49,7 +49,7 @@ export async function jolokiaPost<TResponse>(payload: unknown) {
     });
   } catch {
     throw new JolokiaRequestError(
-      "No se pudo conectar con Jolokia. Verifica que Artemis este levantado y expuesto en localhost:8161.",
+      `No se pudo conectar con Jolokia en ${artemisBaseUrl}. Verifica que Artemis esté levantado.`,
     );
   }
 
