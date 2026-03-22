@@ -1,11 +1,16 @@
 # Artemis Pulse
 
 Artemis Pulse es una consola web moderna para operar y observar colas de **ActiveMQ Artemis** desde una interfaz construida con **Astro**, **React** y **Tailwind CSS**.
-
 El objetivo es ofrecer una experiencia que ayude a diagnosticar y operar con artemis.
 
-## Stack
+## CubePath 
+Desplegado en CubePath, [aqui](#).
+Para poder probar la aplicación hay un broker de artemisMQ funcionando en CubePath.
 
+## ¿Que es ArtemisMQ?
+Apache ActiveMQ Artemis es un bróker de mensajería asíncrona de alto rendimiento, código abierto y multiprotocolo, diseñado como la siguiente generación de ActiveMQ. Basado en Java, facilita la comunicación entre aplicaciones utilizando protocolos como AMQP, MQTT, STOMP y JMS. 
+
+## Stack
 - Astro 6
 - React 19
 - Tailwind CSS 4
@@ -55,3 +60,5 @@ Es la vista de gestión y contenido. Su objetivo es inspeccionar mensajes y oper
 - lectura de body con formato JSON o XML
 - acciones de `purge`, `send` y `move`
 - flujo orientado a productividad operativa
+
+

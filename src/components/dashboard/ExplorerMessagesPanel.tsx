@@ -62,7 +62,7 @@ export function ExplorerMessagesPanel({
   onOpenDeleteQueue,
 }: ExplorerMessagesPanelProps) {
   return (
-    <Card className="min-h-[640px]">
+    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] overflow-hidden">
       <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
@@ -99,7 +99,7 @@ export function ExplorerMessagesPanel({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 overflow-y-auto max-h-[calc(100vh-260px)]">
         {!queue ? (
           <div className="flex min-h-[540px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
             Selecciona una queue desde el panel lateral para abrir sus mensajes.

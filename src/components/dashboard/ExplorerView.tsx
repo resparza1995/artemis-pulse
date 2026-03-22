@@ -451,21 +451,6 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
   return (
     <>
       <div className="space-y-4">
-        <section className="app-panel flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div className="space-y-1">
-            <h2 className="font-display text-xl font-semibold text-foreground">
-              Explorer lectura
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Inspecciona queues y mensajes reales sin salir de Artemis Pulse. Broker actual: {brokerLabel}.
-            </p>
-          </div>
-          <Button variant="secondary" onClick={handleRefresh} disabled={queuesQuery.isFetching}>
-            <RefreshCw className={queuesQuery.isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-            {queuesQuery.isFetching ? "Actualizando" : "Refrescar"}
-          </Button>
-        </section>
-
         {operationNotice ? (
           <div className="app-notice app-notice-success flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4" />
@@ -480,7 +465,7 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
           </div>
         ) : null}
 
-        <section className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_380px]">
+        <section className="grid h-[calc(100vh-220px)] gap-4 overflow-y-auto xl:grid-cols-[280px_minmax(0,1fr)_380px]">
           <ExplorerSidebar
             search={search}
             onSearchChange={(value) => {

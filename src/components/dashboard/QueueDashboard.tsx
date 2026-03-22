@@ -142,7 +142,7 @@ function QueueDashboardContent({
   const selectedQueue = queues.find((queue) => queue.name === selectedQueueName);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5">
       <Card className="overflow-hidden">
         <CardHeader className="gap-4">
           <div className="flex flex-wrap items-center gap-2.5">

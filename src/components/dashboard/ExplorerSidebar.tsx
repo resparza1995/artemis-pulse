@@ -47,7 +47,7 @@ export function ExplorerSidebar({
   const totalQueues = groups.reduce((total, group) => total + group.queues.length, 0);
 
   return (
-    <Card className="min-h-[640px]">
+    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] overflow-hidden flex flex-col">
       <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>Queues</CardTitle>
@@ -77,7 +77,7 @@ export function ExplorerSidebar({
           />
         </label>
       </CardHeader>
-      <CardContent className="px-0 pb-0">
+      <CardContent className="px-0 pb-0 flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="px-5 py-6 text-sm text-muted-foreground">Cargando queues...</div>
         ) : null}
@@ -95,7 +95,7 @@ export function ExplorerSidebar({
         ) : null}
 
         {!isLoading && !isError ? (
-          <div className="max-h-[720px] overflow-y-auto pb-4">
+          <div className="overflow-y-auto pb-4">
             {groups.map((group) => {
               const isExpanded = expandedAddresses[group.address] ?? true;
 

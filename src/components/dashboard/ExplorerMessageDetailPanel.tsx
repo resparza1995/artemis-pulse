@@ -139,7 +139,7 @@ export function ExplorerMessageDetailPanel({
   const formattedBody = formatBody(detail?.body ?? null);
 
   return (
-    <Card className="min-h-[640px] xl:sticky xl:top-6">
+    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] xl:sticky xl:top-6 overflow-hidden">
       <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
@@ -160,7 +160,7 @@ export function ExplorerMessageDetailPanel({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 pt-5">
+      <CardContent className="space-y-4 pt-5 overflow-y-auto max-h-[calc(100vh-260px)]">
         {!queue ? (
           <div className="app-empty-state p-4 text-sm text-muted-foreground">
             Todavia no hay una queue seleccionada.
