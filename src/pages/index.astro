@@ -1,0 +1,20 @@
+---
+import QueueDashboard from "../components/dashboard/QueueDashboard";
+import MainLayout from "../layouts/MainLayout.astro";
+import { getBrokerLabel, getServerConfig } from "../lib/config";
+
+const { pollIntervalMs } = getServerConfig();
+const brokerLabel = getBrokerLabel();
+---
+
+<MainLayout
+  pageTitle="Pulse"
+  pageDescription="Resumen general del broker y de las queues para detectar backlog, DLQ y colas criticas."
+  brokerLabel={brokerLabel}
+>
+  <QueueDashboard
+    client:load
+    pollIntervalMs={pollIntervalMs}
+    brokerLabel={brokerLabel}
+  />
+</MainLayout>

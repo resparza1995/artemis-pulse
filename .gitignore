@@ -1,4 +1,7 @@
 node_modules
-.agents
 .astro
+dist
 .env
+.env.local
+.agents/
+AGENTS.md
