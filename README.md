@@ -4,7 +4,7 @@ A modern operations console for ActiveMQ Artemis.
 
 Artemis Pulse es una consola web moderna para operar y observar colas de **ActiveMQ Artemis** desde una interfaz construida con **Astro**, **React** y **Tailwind CSS**.
 
-La app expone una vista principal orientada a operación en tiempo casi real sobre Jolokia, con foco en salud del broker, backlog, DLQ y detalle contextual de colas. El objetivo es reducir la dependencia de la consola nativa de Artemis y ofrecer una experiencia más clara para diagnóstico y operación.
+La app expone una vista principal orientada a operaciÃ³n en tiempo casi real sobre Jolokia, con foco en salud del broker, backlog, DLQ y detalle contextual de colas. El objetivo es reducir la dependencia de la consola nativa de Artemis y ofrecer una experiencia mÃ¡s clara para diagnÃ³stico y operaciÃ³n.
 
 ## Stack
 
@@ -14,16 +14,16 @@ La app expone una vista principal orientada a operación en tiempo casi real sobr
 - TanStack Query
 - Bun como runtime y gestor de paquetes
 - Astro Node adapter para servir la app en modo server
-- Jolokia como puente de integración con Artemis
+- Jolokia como puente de integraciÃ³n con Artemis
 
 ## Estado actual
 
-- La app vive en la raíz del workspace.
+- La app vive en la raÃ­z del workspace.
 - Existe una base funcional del dashboard principal.
 - El backend interno ya consulta Jolokia con Basic Auth y normaliza el listado de colas.
-- `GET /api/queues` está implementado y devuelve un `QueueSummary` normalizado.
-- La UI ya muestra filtros locales, estados visuales, selección de cola y panel lateral de detalle.
-- La detección de DLQ se basa en convención de nombre.
+- `GET /api/queues` estï¿½ implementado y devuelve un `QueueSummary` normalizado.
+- La UI ya muestra filtros locales, estados visuales, selecciï¿½n de cola y panel lateral de detalle.
+- La detecciÃ³n de DLQ se basa en convenciÃ³n de nombre.
 - `bun run check` pasa correctamente.
 - `bun run build` sigue fallando por un problema del toolchain de Astro en este entorno, no por errores de TypeScript de la app.
 
@@ -64,16 +64,16 @@ POLL_INTERVAL_MS=3000
 
 ### Pulse
 
-Es la pantalla principal del producto. Está orientada a control operativo en tiempo real y combina:
+Es la pantalla principal del producto. Estï¿½ orientada a control operativo en tiempo real y combina:
 
 - mini-cards de estado del broker
 - grid o heatmap de colas
 - panel lateral con detalle de la cola seleccionada
-- filtros rápidos para errores, colas activas y colas vacías
+- filtros rÃ¡pidos para errores, colas activas y colas vacÃ­as
 
 ### Explorer
 
-Es la vista de gestión y contenido. Su objetivo es inspeccionar mensajes y operar sobre colas de forma directa. Incluye:
+Es la vista de gestiï¿½n y contenido. Su objetivo es inspeccionar mensajes y operar sobre colas de forma directa. Incluye:
 
 - visor de mensajes
 - lectura de body con formato JSON o XML
@@ -82,12 +82,12 @@ Es la vista de gestión y contenido. Su objetivo es inspeccionar mensajes y opera
 
 ### Topology
 
-Es una vista de diagnóstico diferida. Se usará para representar el flujo entre broker, addresses, queues y consumers de forma simplificada. No es prioridad del MVP actual, pero ya está contemplada como vista propia.
+Es una vista de diagnÃ³stico diferida. Se usarÃ¡ para representar el flujo entre broker, addresses, queues y consumers de forma simplificada. No es prioridad del MVP actual, pero ya estÃ¡ contemplada como vista propia.
 
 ## Limitaciones conocidas
 
 - Artemis debe estar levantado para que el backend devuelva datos reales.
-- La conexión actual asume Jolokia en `http://localhost:8161/console/jolokia`.
+- La conexiÃ³n actual asume Jolokia en `http://localhost:8161/console/jolokia`.
 - La credencial documentada en el entorno actual es `admin/admin`.
-- `bun run build` todavía tiene un bloqueo externo relacionado con Astro en este entorno Windows + Bun.
-- La primera iteración del producto sigue centrada en lectura; las acciones mutativas de `Explorer` están planificadas pero aún no implementadas.
+- `bun run build` todavï¿½a tiene un bloqueo externo relacionado con Astro en este entorno Windows + Bun.
+- La primera iteraciÃ³n del producto sigue centrada en lectura; las acciones mutativas de `Explorer` estÃ¡n planificadas pero aÃºn no implementadas.
