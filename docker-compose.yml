@@ -6,10 +6,7 @@ services:
       ARTEMIS_USER: admin
       ARTEMIS_PASSWORD: admin123
       DISABLE_SECURITY: "false"
-    ports:
-      - "8161:8161"
-      - "61616:61616"
-      - "5672:5672"
+
     healthcheck:
       test: ["CMD", "sh", "-c", "wget -q -O- http://localhost:8161 || exit 1"]
       interval: 10s
@@ -30,8 +27,7 @@ services:
     depends_on:
       artemis:
         condition: service_healthy
-    ports:
-      - "7071:7071"
+
 
   app:
     build:
