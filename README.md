@@ -7,6 +7,26 @@ La app esta orientada a tres vistas principales:
 - **Explorer**: trabajo diario sobre vinculaciones (addresses), colas (queues) y mensajes
 - **Topology**: mapa de red visual del broker
 
+## Resumen de funcionalidades
+
+- **Explorador en tiempo real**: Inspección de colas, addresses, contadores (consumers, mensajes) y payloads visualizados estructuradamente.
+- **Gestión del Broker**: Crea y elimina *Addresses/Queues* (incluso borradores en cascada) desde la UI.
+- **Operaciones de Mensajes**: *Publish*, *Consume* como consumidor temporal, y vaciado de colas (*Purge*).
+- **Gestiones Avanzadas de DLQ (Corrección de incidencias)**: 
+  - Banner automático inteligente cuando hay mensajes en DLQ.
+  - *Retry* / *Retry All*: Reencolar automáticamente fallos a su originario destino.
+  - *Move* / *Move All*: Volcar mensajes problemáticos a colas de tratamiento secundario.
+- **Panel de Topología**: Mapa visual interactivo mostrando las relaciones, salud y enrutamiento del broker entero.
+
+📖 **[Ver detalle completo de funcionalidades](docs/funcionalidades.md)**: Flujos recomendados y reglas de negocio soportadas por Artemis Pulse.
+
+
+## Despliegue en dockploy
+
+Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento de la app.
+
+🚀 **[Detalle del Modo Demo](docs/demo-mode.md)**
+
 ---
 
 ## Arranque local
@@ -33,10 +53,8 @@ La app estara disponible en `http://localhost:4321`.
 ## Documentacion y Guias
 
 Para mantener este README ligero, la informacion detallada se encuentra segmentada en la carpeta `docs/`. **Es altamente recomendable consultarla**.
-
-- 📖 **[Funcionalidades de la App](docs/funcionalidades.md)**: Que operaciones estan soportadas, y flujos de trabajo recomendados.
 - 🏗️ **[Arquitectura](docs/arquitectura.md)**: Estructura de carpetas, reglas de desarrollo, separation of concerns y flujos de informacion.
-- 🚀 **[Modo Demo y Simulador](docs/demo-mode.md)**: Instrucciones detalladas para usar el cluster en modo demostracion via Docker Compose o arrancar el simulador (generador de trafico sintactico) en local con comandos PowerShell/Bash.
+
 
 ---
 

@@ -61,7 +61,7 @@ export function MoveMessagesModal({
         </div>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-4 min-h-[360px]">
         <div className="app-panel-soft p-4 text-sm text-muted-foreground">
           <p>
             Queue origen: <span className="text-foreground">{queueName ?? "ninguna"}</span>

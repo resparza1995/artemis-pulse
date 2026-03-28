@@ -24,17 +24,19 @@ function parsePollInterval(value: string | undefined) {
 }
 
 export function getServerConfig() {
+  const env = typeof process !== "undefined" ? process.env : (import.meta as any).env;
+  
   return {
     artemisBaseUrl:
-      import.meta.env.ARTEMIS_BASE_URL ?? DEFAULT_ARTEMIS_BASE_URL,
+      env.ARTEMIS_BASE_URL ?? (import.meta as any).env?.ARTEMIS_BASE_URL ?? DEFAULT_ARTEMIS_BASE_URL,
     artemisUsername:
-      import.meta.env.ARTEMIS_USERNAME ?? DEFAULT_ARTEMIS_USERNAME,
+      env.ARTEMIS_USERNAME ?? (import.meta as any).env?.ARTEMIS_USERNAME ?? DEFAULT_ARTEMIS_USERNAME,
     artemisPassword:
-      import.meta.env.ARTEMIS_PASSWORD ?? DEFAULT_ARTEMIS_PASSWORD,
-    pollIntervalMs: parsePollInterval(import.meta.env.POLL_INTERVAL_MS),
-    demoControlEnabled: parseBoolean(import.meta.env.DEMO_CONTROL_ENABLED, false),
+      env.ARTEMIS_PASSWORD ?? (import.meta as any).env?.ARTEMIS_PASSWORD ?? DEFAULT_ARTEMIS_PASSWORD,
+    pollIntervalMs: parsePollInterval(env.POLL_INTERVAL_MS ?? (import.meta as any).env?.POLL_INTERVAL_MS),
+    demoControlEnabled: parseBoolean(env.DEMO_CONTROL_ENABLED ?? (import.meta as any).env?.DEMO_CONTROL_ENABLED, false),
     demoControlBaseUrl:
-      import.meta.env.DEMO_CONTROL_BASE_URL ?? DEFAULT_DEMO_CONTROL_BASE_URL,
+      env.DEMO_CONTROL_BASE_URL ?? (import.meta as any).env?.DEMO_CONTROL_BASE_URL ?? DEFAULT_DEMO_CONTROL_BASE_URL,
   };
 }
 

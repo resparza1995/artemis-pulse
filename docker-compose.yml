@@ -1,9 +1,9 @@
 services:
   artemis:
-    image: vromero/activemq-artemis:2.41.0-alpine
+    image: apache/activemq-artemis:latest
     container_name: artemis-pulse-artemis
     environment:
-      ARTEMIS_USERNAME: admin
+      ARTEMIS_USER: admin
       ARTEMIS_PASSWORD: admin123
       DISABLE_SECURITY: "false"
     ports:
