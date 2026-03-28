@@ -23,7 +23,8 @@ La app esta orientada a tres vistas principales:
 
 ## Despliegue en dockploy
 
-Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento de la app.
+Accede [aquí](http://vps22550.cubepath.net:4321/) para probar la app.
+Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento real.
 
 🚀 **[Detalle del Modo Demo](docs/demo-mode.md)**
 
