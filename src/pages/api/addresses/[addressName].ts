@@ -24,6 +24,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
 
   try {
     const decodedAddress = decodeURIComponent(addressName);
+    const force = new URL(request.url).searchParams.get("force") === "true";
 
     enforceDemoPolicy({
       request,
@@ -31,7 +32,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
       resources: [decodedAddress],
     });
 
-    const result = await deleteAddress(decodedAddress);
+    const result = await deleteAddress(decodedAddress, force);
 
     return new Response(JSON.stringify(result), {
       status: 200,

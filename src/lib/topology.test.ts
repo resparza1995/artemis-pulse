@@ -21,12 +21,12 @@ describe("getQueueTopologyStatus", () => {
     criticalBacklog: 1000,
   };
 
-  test("returns inactive when queue has no consumers and no backlog", () => {
-    expect(getQueueTopologyStatus({ consumerCount: 0, messageCount: 0 }, thresholds)).toBe("inactive");
+  test("returns healthy when queue has no consumers and no backlog", () => {
+    expect(getQueueTopologyStatus({ consumerCount: 0, messageCount: 0 }, thresholds)).toBe("healthy");
   });
 
-  test("returns warning when queue has backlog without consumers", () => {
-    expect(getQueueTopologyStatus({ consumerCount: 0, messageCount: 10 }, thresholds)).toBe("warning");
+  test("returns critical when queue has backlog without consumers", () => {
+    expect(getQueueTopologyStatus({ consumerCount: 0, messageCount: 10 }, thresholds)).toBe("critical");
   });
 
   test("returns critical when backlog crosses critical threshold", () => {

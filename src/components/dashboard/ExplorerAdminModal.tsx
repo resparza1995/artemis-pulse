@@ -64,10 +64,6 @@ export function ExplorerAdminModal({
       }
     >
       <div className="space-y-4">
-        <div className="app-panel-inset px-4 py-3 text-sm text-muted-foreground">
-          Las addresses vacias no aparecen en el arbol lateral hasta que tienen queues asociadas.
-        </div>
-
         <div className="grid gap-3 md:grid-cols-3">
           <ActionCard
             title="Nueva address"

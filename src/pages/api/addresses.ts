@@ -1,11 +1,42 @@
 import type { APIRoute } from "astro";
-import { createAddress } from "../../lib/artemis";
+import { createAddress, listAddresses } from "../../lib/artemis";
 import { DemoGuardError, enforceDemoPolicy } from "../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../lib/jolokia";
 
 type CreateAddressPayload = {
   address?: string;
   routingType?: "ANYCAST" | "MULTICAST";
+};
+
+export const GET: APIRoute = async () => {
+  try {
+    const addresses = await listAddresses();
+
+    return new Response(JSON.stringify(addresses), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: "ADDRESS_FETCH_FAILED",
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudieron obtener las addresses.",
+      }),
+      {
+        status: 502,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {

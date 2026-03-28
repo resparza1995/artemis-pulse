@@ -289,7 +289,7 @@ function QueueDashboardContent({
   }
 
   return (
-    <div className="app-scroll-y mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col gap-4 pr-1">
+    <div className="flex h-full w-full min-h-0 flex-col gap-4">
       <Card className="flex-none overflow-hidden">
         <CardHeader className="gap-2 px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">

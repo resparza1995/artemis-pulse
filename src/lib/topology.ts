@@ -1,11 +1,9 @@
 import { getBrokerLabel } from "./config";
+import { getQueueStatus, getQueueStatusThresholds, type QueueStatusThresholds } from "./queue-status";
 import type { QueueSummary } from "../types/queues";
 import type { TopologyEdge, TopologyGraph, TopologyNode, TopologyNodeStatus } from "../types/topology";
 
-export type TopologyThresholds = {
-  warningBacklog: number;
-  criticalBacklog: number;
-};
+export type TopologyThresholds = QueueStatusThresholds;
 
 type BuildTopologyInput = {
   queues: QueueSummary[];
@@ -13,45 +11,15 @@ type BuildTopologyInput = {
   thresholds?: TopologyThresholds;
 };
 
-const DEFAULT_WARNING_BACKLOG = 100;
-const DEFAULT_CRITICAL_BACKLOG = 1000;
-
-function parsePositiveInteger(value: string | undefined, fallback: number) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return Math.floor(parsed);
-}
-
 export function getTopologyThresholds(): TopologyThresholds {
-  return {
-    warningBacklog: parsePositiveInteger(import.meta.env.TOPOLOGY_WARNING_BACKLOG, DEFAULT_WARNING_BACKLOG),
-    criticalBacklog: parsePositiveInteger(import.meta.env.TOPOLOGY_CRITICAL_BACKLOG, DEFAULT_CRITICAL_BACKLOG),
-  };
+  return getQueueStatusThresholds();
 }
 
 export function getQueueTopologyStatus(
   queue: Pick<QueueSummary, "consumerCount" | "messageCount">,
   thresholds: TopologyThresholds,
 ): TopologyNodeStatus {
-  if (queue.consumerCount <= 0 && queue.messageCount <= 0) {
-    return "inactive";
-  }
-
-  if (queue.messageCount >= thresholds.criticalBacklog) {
-    return "critical";
-  }
-
-  if (queue.consumerCount <= 0) {
-    return "warning";
-  }
-
-  if (queue.messageCount >= thresholds.warningBacklog) {
-    return "warning";
-  }
-
-  return "healthy";
+  return getQueueStatus(queue.messageCount, queue.consumerCount, thresholds);
 }
 
 function createId(prefix: string, value: string) {
@@ -110,19 +78,17 @@ export function buildTopologyGraph({ queues, nowIso, thresholds = getTopologyThr
         ? ("critical" as const)
         : address.queues.some((queue) => getQueueTopologyStatus(queue, thresholds) === "warning")
           ? ("warning" as const)
-          : address.queues.every((queue) => getQueueTopologyStatus(queue, thresholds) === "inactive")
-            ? ("inactive" as const)
-            : ("healthy" as const),
+          : ("healthy" as const),
     })),
   );
 
-  const addressXSpacing = 340;
+  const addressXSpacing = 580;
   const addressBaseX = 140;
   const addressY = 220;
-  const queueBaseY = 410;
-  const queueRowHeight = 130;
-  const queueColumnOffset = 120;
-  const consumerYOffset = 90;
+  const queueBaseY = 380;
+  const queueRowHeight = 250;
+  const queueColumnOffset = 140;
+  const consumerYOffset = 70;
 
   addresses.forEach((address, addressIndex) => {
     const addressX = addressBaseX + addressIndex * addressXSpacing;
@@ -189,8 +155,8 @@ export function buildTopologyGraph({ queues, nowIso, thresholds = getTopologyThr
                 : `${queue.name}.consumer.${index + 1}`,
             status: "healthy",
             position: {
-              x: queueX + (index - 1) * 70,
-              y: queueY + consumerYOffset,
+              x: queueX,
+              y: queueY + consumerYOffset + index * 55,
             },
             meta: {
               parentId: queueId,

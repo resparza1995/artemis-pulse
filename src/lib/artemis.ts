@@ -74,6 +74,7 @@ const QUEUE_ATTRIBUTES = [
   "ScheduledCount",
 ] as const;
 const BROKER_MBEAN_PATTERN = 'org.apache.activemq.artemis:broker=*';
+const ADDRESS_MBEAN_PATTERN = 'org.apache.activemq.artemis:broker=*,component=addresses,address=*';
 const SUPPORTED_MESSAGE_LIMITS = new Set([100, 250, 500]);
 
 function extractObjectProperty(objectName: string, propertyName: string) {
@@ -665,6 +666,34 @@ export async function listQueues() {
   return sortQueues(queues);
 }
 
+export async function listAddresses() {
+  const response = await jolokiaPost<JolokiaSearchResponse>({
+    type: "search",
+    mbean: ADDRESS_MBEAN_PATTERN,
+  });
+
+  if (response.status !== 200 || !("value" in response) || !Array.isArray(response.value)) {
+    throw new JolokiaRequestError("No se pudieron listar las addresses desde Jolokia.");
+  }
+
+  const uniqueAddresses = new Set<string>();
+
+  for (const objectName of response.value) {
+    const address = extractObjectProperty(objectName, "address");
+    if (!address) {
+      continue;
+    }
+
+    if (address.startsWith("$")) {
+      continue;
+    }
+
+    uniqueAddresses.add(address);
+  }
+
+  return [...uniqueAddresses].sort((left, right) => left.localeCompare(right));
+}
+
 function normalizePercent(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return 0;
@@ -1006,11 +1035,19 @@ export async function deleteQueue(queueName: string) {
   } satisfies QueueDeleteResponse;
 }
 
-export async function deleteAddress(address: string) {
+export async function deleteAddress(address: string, force = false) {
   const normalizedAddress = address.trim();
 
   if (!normalizedAddress) {
     throw new JolokiaRequestError("Debes indicar la address que quieres eliminar.", 400);
+  }
+
+  if (force) {
+    const queues = await listQueues();
+    const bound = queues.filter((q) => q.address === normalizedAddress);
+    for (const queue of bound) {
+      await deleteQueue(queue.name);
+    }
   }
 
   const brokerObjectName = await getBrokerObjectName();

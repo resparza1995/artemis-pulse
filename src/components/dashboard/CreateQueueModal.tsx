@@ -1,11 +1,14 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import { FilterableCombobox } from "../ui/filterable-combobox";
+import { Dropdown } from "../ui/dropdown";
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
 
 type CreateQueueModalProps = {
   open: boolean;
   initialAddress?: string;
+  addresses: string[];
   onClose: () => void;
   onBack?: () => void;
   onSubmit: (payload: {
@@ -21,6 +24,7 @@ type CreateQueueModalProps = {
 export function CreateQueueModal({
   open,
   initialAddress,
+  addresses,
   onClose,
   onBack,
   onSubmit,
@@ -47,6 +51,7 @@ export function CreateQueueModal({
       onClose={onClose}
       title="Nueva queue"
       description="Crea una queue y, si hace falta, su address asociada para preparar pruebas desde la propia UI."
+      className="max-w-3xl min-h-[36rem]"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -78,9 +83,10 @@ export function CreateQueueModal({
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm text-foreground">
             <span>Address</span>
-            <Input
+            <FilterableCombobox
               value={address}
-              onChange={(event) => setAddress(event.target.value)}
+              onChange={setAddress}
+              options={addresses}
               placeholder="orders.in"
               autoFocus
             />
@@ -98,16 +104,11 @@ export function CreateQueueModal({
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm text-foreground">
             <span>Routing type</span>
-            <select
+            <Dropdown
               value={routingType}
-              onChange={(event) =>
-                setRoutingType(event.target.value as "ANYCAST" | "MULTICAST")
-              }
-              className="app-control app-select flex h-11 px-4 py-2 text-sm"
-            >
-              <option value="ANYCAST">ANYCAST</option>
-              <option value="MULTICAST">MULTICAST</option>
-            </select>
+              onChange={(value) => setRoutingType(value as "ANYCAST" | "MULTICAST")}
+              options={["ANYCAST", "MULTICAST"]}
+            />
           </label>
           <label className="app-toggle-shell flex items-center gap-3 rounded-[1.25rem] px-4 py-3 text-sm text-foreground">
             <input

@@ -6,6 +6,7 @@ Hoy la app sirve sobre todo para trabajar en la vista `Explorer`.
 
 Permite:
 - ver queues y addresses del broker a traves del arbol `address -> queue`
+- ver addresses vacias en el arbol lateral
 - buscar y seleccionar una queue
 - ver mensajes sin consumirlos automaticamente
 - ver el detalle del mensaje seleccionado
@@ -21,6 +22,7 @@ Permite:
 - eliminar addresses por nombre
 - mover mensajes a otra queue
 - reintentar mensajes desde DLQ cuando el destino original es resoluble
+- cambiar perfiles demo desde `Pulse`
 
 No permite todavia:
 - crear consumers persistentes tipo servicio conectado
@@ -39,9 +41,19 @@ Uso actual:
 - resumen general del broker
 - estado de queues
 - backlog, DLQ y colas criticas
+- cambio de perfil demo (`steady`, `incident`, `recovery`)
 
 Es una vista de orientacion.
 No es la vista principal de trabajo diario.
+
+### `/topology`
+Vista visual de relaciones del broker.
+
+Uso actual:
+- ver broker, addresses, queues y consumers
+- localizar DLQ, nodos inactivos y colas sin consumers
+- filtrar por texto, DLQ, consumers y problemas
+- abrir una queue concreta en `Explorer`
 
 ### `/explorer`
 Vista principal de trabajo.
@@ -91,12 +103,11 @@ Se puede:
 - abrir el modal `Gestion` desde el sidebar
 - crear una address nueva
 - crear una queue nueva
-- eliminar una address por nombre
+- eliminar una address desde selector filtrable
 - ver el contexto actual de queue/address seleccionada
 
 Importante:
-- una address vacia no aparece en el arbol lateral hasta que tenga alguna queue asociada
-- esa limitacion se explica dentro del propio modal `Gestion`
+- las addresses vacias ya aparecen en el arbol lateral
 
 ### 4. Crear una address
 Se puede:
@@ -113,13 +124,13 @@ Flujo:
 
 ### 5. Eliminar una address
 Se puede:
-- eliminar una address escribiendo su nombre o usando el valor pre-rellenado de la seleccion actual
+- eliminar una address usando un selector filtrable o la seleccion actual pre-rellenada
 
 Flujo:
 1. Ir a `/explorer`
 2. Pulsar `Gestion`
 3. Elegir `Eliminar address`
-4. Confirmar o editar el nombre de la address
+4. Seleccionar o filtrar la address
 5. Ejecutar la accion
 
 Importante:
@@ -132,6 +143,7 @@ Se puede:
 - crear tambien la address asociada si no existia
 - elegir `ANYCAST` o `MULTICAST`
 - decidir si la queue es durable
+- filtrar la address desde un selector editable
 
 Flujo:
 1. Ir a `/explorer`
@@ -140,6 +152,18 @@ Flujo:
 4. Rellenar `address`, `queue name`, `routing type` y `durable`
 5. Confirmar en el modal
 6. La nueva queue aparece en el arbol lateral
+
+### 6b. Crear una address vacia
+Se puede:
+- crear una address sin queues asociadas
+- verla inmediatamente en el arbol lateral
+
+Flujo:
+1. Ir a `/explorer`
+2. Pulsar `Gestion`
+3. Elegir `Nueva address`
+4. Confirmar
+5. La address queda visible aunque no tenga queues
 
 ### 7. Eliminar una queue
 Se puede:
@@ -304,6 +328,12 @@ Importante:
 - no hay monitor de consumers conectados por aplicacion
 - el boton `Consume` no crea un proceso largo; ejecuta una accion puntual
 
+### Modo demo
+- requiere simulador activo
+- el cambio de perfil se hace desde `Pulse`
+- hay rate limit para escrituras si `DEMO_GUARD_ENABLED=true`
+- puede haber auto-reset periodico del escenario si esta configurado
+
 ### Operaciones que todavia no existen
 - paginacion real por offset
 - retry con reglas avanzadas o filtros
@@ -311,7 +341,7 @@ Importante:
 - requeue selectivo por expresion
 - consume con selector/filtro
 - ack parcial avanzado
-- simulador de carga completo
+- observabilidad mas rica del simulador demo
 
 ## Acciones destructivas
 

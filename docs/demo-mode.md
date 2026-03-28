@@ -41,7 +41,6 @@ Esto garantiza que no se mezclen datos del perfil anterior.
 - `DEMO_CONTROL_ENABLED=true|false`
 - `DEMO_CONTROL_BASE_URL=http://demo-simulator:7071`
 - `DEMO_GUARD_ENABLED=true|false`
-- `DEMO_ALLOWED_PREFIX=demo.`
 - `DEMO_RATE_LIMIT_WINDOW_MS=60000`
 - `DEMO_RATE_LIMIT_MAX_WRITES=20`
 - `DEMO_AUTO_RESET_ENABLED=true|false`
@@ -52,7 +51,6 @@ Si `DEMO_CONTROL_ENABLED=false`, el selector de perfiles en `Pulse` queda deshab
 
 Si `DEMO_GUARD_ENABLED=true`, las operaciones de escritura:
 
-- solo permiten recursos bajo el prefijo configurado (`demo.*` por defecto),
 - aplican rate limit por IP y accion (respuesta `429` al exceder),
 - y pueden ejecutar auto-reset periodico del escenario (10 min por defecto).
 

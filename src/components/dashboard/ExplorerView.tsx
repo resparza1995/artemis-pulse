@@ -1,4 +1,4 @@
-﻿import {
+import {
   QueryClient,
   QueryClientProvider,
   useMutation,
@@ -40,6 +40,7 @@ import { PublishMessageModal } from "./PublishMessageModal";
 import { PurgeQueueModal } from "./PurgeQueueModal";
 import { RetryMessagesModal } from "./RetryMessagesModal";
 import { MODAL_TRANSITION_MS } from "../ui/modal";
+import { toastManager } from "../../lib/toast";
 
 type ExplorerViewProps = {
   brokerLabel: string;
@@ -214,8 +215,11 @@ async function deleteQueueRequest(queueName: string) {
   return parseResponse<QueueDeleteResponse>(response);
 }
 
-async function deleteAddressRequest(address: string) {
-  const response = await fetch(`/api/addresses/${encodeURIComponent(address)}`, {
+async function deleteAddressRequest(payload: { address: string; force: boolean }) {
+  const url = payload.force
+    ? `/api/addresses/${encodeURIComponent(payload.address)}?force=true`
+    : `/api/addresses/${encodeURIComponent(payload.address)}`;
+  const response = await fetch(url, {
     method: "DELETE",
     headers: { Accept: "application/json" },
   });
@@ -344,6 +348,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     [queueGroups],
   );
   const selectedQueue = queues.find((queue) => queue.name === selectedQueueName);
+  const allAddresses = Array.from(new Set(queues.map((q) => q.address)));
 
   useEffect(() => {
     function syncQueueFromUrl() {
@@ -437,9 +442,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     const filtered = items.filter((message) => {
       if (!query) {
         return true;
-      }
-
-      return (
+      }return (
         message.messageId.toLowerCase().includes(query) ||
         (message.contentType ?? "").toLowerCase().includes(query) ||
         (message.preview ?? "").toLowerCase().includes(query)
@@ -493,10 +496,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     mutationFn: createAddressRequest,
     onSuccess: async (result) => {
       setIsCreateAddressOpen(false);
-      setOperationNotice({
-        tone: "success",
-        message: `Address ${result.address} creada. Podras asociarle queues desde la UI.`,
-      });
+      toastManager.success(`Address ${result.address} creada. Podras asociarle queues desde la UI.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -507,10 +507,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsCreateQueueOpen(false);
       setSearch("");
       setSelectedQueueName(queue.name);
-      setOperationNotice({
-        tone: "success",
-        message: `Queue ${queue.name} creada correctamente.`,
-      });
+      toastManager.success(`Queue ${queue.name} creada correctamente.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -525,10 +522,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     },
     onSuccess: async (result) => {
       setIsPublishOpen(false);
-      setOperationNotice({
-        tone: "success",
-        message: `Se publicaron ${result.sentCount} mensaje(s) en ${result.queueName}.`,
-      });
+      toastManager.success(`Se publicaron ${result.sentCount} mensaje(s) en ${result.queueName}.`);
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
       });
@@ -548,10 +542,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsPurgeOpen(false);
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      setOperationNotice({
-        tone: "success",
-        message: `Se limpiaron ${result.removedCount} mensajes de ${result.queueName}.`,
-      });
+      toastManager.success(`Se limpiaron ${result.removedCount} mensajes de ${result.queueName}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -575,10 +566,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsConsumeOpen(false);
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      setOperationNotice({
-        tone: "success",
-        message: `Consumer temporal: ${result.consumedCount} mensaje(s) consumidos de ${result.queueName}.`,
-      });
+      toastManager.success(`Consumer temporal: ${result.consumedCount} mensaje(s) consumidos de ${result.queueName}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -604,7 +592,8 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     onSuccess: async (result) => {
       setIsRetryOpen(false);
       setSelectedMessageIds([]);
-      setOperationNotice(buildMessageActionNotice(result));
+      const retryNotice = buildMessageActionNotice(result);
+      if (retryNotice.tone === "warning") { toastManager.warning(retryNotice.message); } else { toastManager.success(retryNotice.message); }
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -631,7 +620,8 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     onSuccess: async (result) => {
       setIsMoveOpen(false);
       setSelectedMessageIds([]);
-      setOperationNotice(buildMessageActionNotice(result));
+      const moveNotice = buildMessageActionNotice(result);
+      if (moveNotice.tone === "warning") { toastManager.warning(moveNotice.message); } else { toastManager.success(moveNotice.message); }
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -656,10 +646,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setSelectedQueueName("");
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      setOperationNotice({
-        tone: "success",
-        message: `Queue ${result.queueName} eliminada.`,
-      });
+      toastManager.success(`Queue ${result.queueName} eliminada.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -672,13 +659,10 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   });
 
   const deleteAddressMutation = useMutation({
-    mutationFn: (address: string) => deleteAddressRequest(address),
+    mutationFn: (payload: { address: string; force: boolean }) => deleteAddressRequest(payload),
     onSuccess: async (result) => {
       setIsDeleteAddressOpen(false);
-      setOperationNotice({
-        tone: "success",
-        message: `Address ${result.address} eliminada.`,
-      });
+      toastManager.success(`Address ${result.address} eliminada.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -888,6 +872,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       <CreateQueueModal
         open={isCreateQueueOpen}
         initialAddress={selectedQueue?.address}
+        addresses={allAddresses}
         onClose={() => {
           if (!createQueueMutation.isPending) {
             setIsCreateQueueOpen(false);
@@ -969,6 +954,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       <DeleteAddressModal
         open={isDeleteAddressOpen}
         initialAddress={selectedQueue?.address}
+        addresses={allAddresses}
         onClose={() => {
           if (!deleteAddressMutation.isPending) {
             setIsDeleteAddressOpen(false);
@@ -976,8 +962,8 @@ function ExplorerViewContent(_: ExplorerViewProps) {
           }
         }}
         onBack={() => returnToAdmin("delete-address")}
-        onConfirm={async (address) => {
-          await deleteAddressMutation.mutateAsync(address);
+        onConfirm={async (payload) => {
+          await deleteAddressMutation.mutateAsync(payload);
         }}
         isPending={deleteAddressMutation.isPending}
         errorMessage={deleteAddressMutation.error?.message}

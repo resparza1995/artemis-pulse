@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { QueueSummary } from "../../types/queues";
 import { Button } from "../ui/button";
+import { FilterableCombobox } from "../ui/filterable-combobox";
 import { Modal } from "../ui/modal";
 
 type MoveMessagesModalProps = {
@@ -48,6 +49,7 @@ export function MoveMessagesModal({
           ? `Movera mensajes desde ${queueName} a otra queue del broker.`
           : "Selecciona una queue para mover mensajes."
       }
+      className="max-w-3xl"
       footer={
         <div className="flex flex-wrap items-center justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -74,18 +76,17 @@ export function MoveMessagesModal({
 
         <label className="space-y-2 text-sm text-foreground">
           <span>Destino</span>
-          <select
+          <FilterableCombobox
             value={destinationQueueName}
-            onChange={(event) => setDestinationQueueName(event.target.value)}
-            className="app-control app-select flex h-11 px-4 py-2 text-sm"
-          >
-            {destinationOptions.length === 0 ? <option value="">No hay queues destino disponibles</option> : null}
-            {destinationOptions.map((queue) => (
-              <option key={queue.name} value={queue.name}>
-                {queue.address} / {queue.name}
-              </option>
-            ))}
-          </select>
+            onChange={setDestinationQueueName}
+            options={destinationOptions.map((queue) => queue.name)}
+            placeholder={
+              destinationOptions.length === 0
+                ? "No hay queues destino disponibles"
+                : "Selecciona queue destino"
+            }
+            disabled={destinationOptions.length === 0}
+          />
         </label>
 
         {destinationOptions.length === 0 ? (

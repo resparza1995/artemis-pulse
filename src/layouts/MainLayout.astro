@@ -1,5 +1,6 @@
-﻿---
+---
 import { ClientRouter } from "astro:transitions";
+import { Toaster } from "../components/ui/toaster";
 import "../styles/global.css";
 
 type Props = {
@@ -92,5 +93,6 @@ const navItems = [
         </div>
       </div>
     </main>
+    <Toaster client:load />
   </body>
 </html>

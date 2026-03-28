@@ -1,14 +1,15 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { FilterableCombobox } from "../ui/filterable-combobox";
 import { Modal } from "../ui/modal";
 
 type DeleteAddressModalProps = {
   open: boolean;
   initialAddress?: string;
+  addresses: string[];
   onClose: () => void;
   onBack?: () => void;
-  onConfirm: (address: string) => Promise<void>;
+  onConfirm: (payload: { address: string; force: boolean }) => Promise<void>;
   isPending: boolean;
   errorMessage?: string;
 };
@@ -16,6 +17,7 @@ type DeleteAddressModalProps = {
 export function DeleteAddressModal({
   open,
   initialAddress,
+  addresses,
   onClose,
   onBack,
   onConfirm,
@@ -23,12 +25,18 @@ export function DeleteAddressModal({
   errorMessage,
 }: DeleteAddressModalProps) {
   const [address, setAddress] = useState(initialAddress ?? "");
+  const [force, setForce] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setAddress(initialAddress ?? "");
+      if (initialAddress && addresses.includes(initialAddress)) {
+        setAddress(initialAddress);
+      } else {
+        setAddress(addresses[0] ?? "");
+      }
+      setForce(false);
     }
-  }, [initialAddress, open]);
+  }, [addresses, initialAddress, open]);
 
   const canDelete = address.trim().length > 0;
 
@@ -37,7 +45,8 @@ export function DeleteAddressModal({
       open={open}
       onClose={onClose}
       title="Eliminar address"
-      description="El broker rechazara la operacion si la address todavia tiene queues asociadas. Puedes editar el nombre antes de confirmar."
+      description="El broker rechazara la operacion si la address todavia tiene queues asociadas. Selecciona una address y confirma."
+      className="max-w-3xl min-h-[34rem]"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -54,7 +63,7 @@ export function DeleteAddressModal({
             <Button
               type="button"
               variant="destructive"
-              onClick={() => void onConfirm(address)}
+              onClick={() => void onConfirm({ address, force })}
               disabled={isPending || !canDelete}
             >
               {isPending ? "Eliminando..." : "Eliminar address"}
@@ -65,23 +74,44 @@ export function DeleteAddressModal({
     >
       <div className="space-y-4">
         <div className="app-notice app-notice-warning text-sm">
-          Usa esta accion solo cuando quieras retirar una address de pruebas. Si tiene queues enlazadas, primero elimina esas queues.
+          Usa esta accion solo cuando quieras retirar una address de pruebas. Si tiene queues
+          enlazadas, primero elimina esas queues o usa la opcion de forzar.
         </div>
 
         <label className="space-y-2 text-sm text-foreground">
           <span>Address</span>
-          <Input
+          <FilterableCombobox
             value={address}
-            onChange={(event) => setAddress(event.target.value)}
+            onChange={setAddress}
+            options={addresses}
             placeholder="orders.events"
             autoFocus
           />
         </label>
 
-        {errorMessage ? (
-          <div className="app-notice app-notice-critical text-sm">
-            {errorMessage}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-raised)] px-4 py-3 text-sm transition hover:bg-[color:var(--surface-hover)]">
+          <input
+            type="checkbox"
+            checked={force}
+            onChange={(e) => setForce(e.target.checked)}
+            className="app-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-[color:var(--border)] bg-transparent"
+          />
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium leading-none">Eliminar colas asociadas</span>
+            <span className="text-xs opacity-55">
+              Borra todas las colas de esta address y sus mensajes antes de eliminarla.
+            </span>
           </div>
+        </label>
+
+        {addresses.length === 0 ? (
+          <div className="app-notice app-notice-neutral text-sm">
+            No hay addresses disponibles para eliminar.
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div className="app-notice app-notice-critical text-sm">{errorMessage}</div>
         ) : null}
       </div>
     </Modal>

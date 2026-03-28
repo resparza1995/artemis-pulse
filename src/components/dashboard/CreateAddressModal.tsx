@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import { Dropdown } from "../ui/dropdown";
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
 
@@ -40,7 +41,8 @@ export function CreateAddressModal({
       open={open}
       onClose={onClose}
       title="Nueva address"
-      description="Crea una address independiente para preparar pruebas. Si no tiene queues asociadas, no aparecera todavia en el arbol lateral."
+      description="Crea una address independiente para preparar pruebas."
+      className="max-w-3xl min-h-[34rem]"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -81,16 +83,11 @@ export function CreateAddressModal({
 
         <label className="space-y-2 text-sm text-foreground">
           <span>Routing type</span>
-          <select
+          <Dropdown
             value={routingType}
-            onChange={(event) =>
-              setRoutingType(event.target.value as "ANYCAST" | "MULTICAST")
-            }
-            className="app-control app-select flex h-11 px-4 py-2 text-sm"
-          >
-            <option value="ANYCAST">ANYCAST</option>
-            <option value="MULTICAST">MULTICAST</option>
-          </select>
+            onChange={(value) => setRoutingType(value as "ANYCAST" | "MULTICAST")}
+            options={["ANYCAST", "MULTICAST"]}
+          />
         </label>
 
         {errorMessage ? (
