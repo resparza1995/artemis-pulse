@@ -1,4 +1,4 @@
-﻿# Arquitectura de Artemis Pulse
+# Arquitectura de Artemis Pulse
 
 ## Objetivo
 
@@ -23,27 +23,34 @@ Artemis Pulse esta construido con:
 La separacion principal es esta:
 
 1. `src/pages` define rutas y endpoints
-2. `src/components` compone la UI
-3. `src/lib` concentra integracion, dominio y protecciones
-4. `src/types` define contratos compartidos
-5. `src/styles` define tokens y patrones visuales globales
-6. `tools/` agrupa utilidades auxiliares como el simulador demo
+2. `src/features` compone la UI — una carpeta por feature de negocio
+3. `src/ui` primitivas visuales reutilizables
+4. `src/lib` concentra integracion, dominio y protecciones
+5. `src/types` define contratos compartidos entre features
+6. `src/styles` define tokens y patrones visuales globales
+7. `tools/` agrupa utilidades auxiliares como el simulador demo
 
 ## Estructura del proyecto
 
 ```text
 src/
-  components/
-    dashboard/
-    topology/
-    ui/
+  features/
+    explorer/       ← vista Explorer y todos sus modales
+      modals/
+      types.ts
+    pulse/          ← vista Pulse (dashboard)
+    topology/       ← vista Topology
+      types.ts
+  ui/               ← primitivas reutilizables (button, card, modal…)
   layouts/
   lib/
+    artemis/        ← nucleo de integracion con Artemis/Jolokia
+      index.ts
     demo-guard/
   pages/
     api/
   styles/
-  types/
+  types/            ← contratos compartidos entre features y API
 docs/
 tools/
   demo-simulator/
@@ -113,19 +120,28 @@ Criterio arquitectonico:
 - navegacion `Pulse / Explorer / Topology`
 - shell visual de la app
 
-### `src/components/dashboard`
-Aqui viven las pantallas y modales de negocio de `Pulse` y `Explorer`.
+### `src/features/explorer`
+Vista principal de trabajo y todos sus paneles y modales.
+
+Componentes clave:
+- `ExplorerView.tsx` — coordinacion y estado
+- `ExplorerSidebar.tsx`
+- `ExplorerMessagesPanel.tsx` — lista de mensajes con banner DLQ
+- `ExplorerMessageDetailPanel.tsx`
+- `ExplorerAdminModal.tsx`
+- `modals/` — create/delete/publish/consume/move/retry
+- `types.ts` — contratos propios del Explorer
+
+### `src/features/pulse`
+Vista de resumen operativo.
 
 Componentes clave:
 - `QueueDashboard.tsx`
-- `ExplorerView.tsx`
-- `ExplorerSidebar.tsx`
-- `ExplorerMessagesPanel.tsx`
-- `ExplorerMessageDetailPanel.tsx`
-- modales de create/delete/publish/consume/move/retry
+- `QueueTable.tsx`, `QueueDetailPanel.tsx`, `StatsCard.tsx`
+- `QueueHealthBadge.tsx`
 
-### `src/components/topology`
-Aqui vive la vista `Topology`.
+### `src/features/topology`
+Vista visual del broker.
 
 Componentes clave:
 - `TopologyView.tsx`
@@ -133,14 +149,16 @@ Componentes clave:
 - `TopologyDetailPanel.tsx`
 - `TopologyToolbar.tsx`
 - `TopologyLegend.tsx`
+- `types.ts` — contratos propios de Topology
 
-### `src/components/ui`
+### `src/ui`
 Primitivas reutilizables:
 - `button.tsx`
 - `card.tsx`
 - `badge.tsx`
 - `input.tsx`
 - `modal.tsx`
+- `toaster.tsx` — sistema global de toast notifications
 - `filterable-combobox.tsx`
 - `dropdown.tsx`
 
@@ -149,15 +167,14 @@ Regla practica:
 
 ## Capa de dominio e integracion
 
-### `src/lib/artemis.ts`
+### `src/lib/artemis/index.ts`
 Es el nucleo del backend de la app.
 
 Responsabilidades:
-- listar queues
-- listar addresses
+- listar queues y addresses
 - metricas del broker
 - lectura de mensajes
-- create/delete address
+- create/delete address (con borrado en cascada de colas si `force=true`)
 - create/delete queue
 - publish
 - consume
@@ -170,6 +187,13 @@ Cliente HTTP hacia Jolokia.
 
 ### `src/lib/config.ts`
 Lectura y normalizacion de variables de entorno.
+
+### `src/lib/toast.ts`
+Gestor global de toast notifications (`toastManager`).
+
+Responsabilidades:
+- mostrar feedback visual tras operaciones (success/warning)
+- las notificaciones aparecen en la esquina superior derecha y desaparecen solas
 
 ### `src/lib/topology.ts`
 Transforma datos del broker en un grafo consumible por `Topology`.
@@ -283,8 +307,9 @@ El repo incluye:
 
 ## Reglas practicas
 
-- Si una operacion toca Artemis, primero pensar en `src/lib/artemis.ts`
-- Si una vista crece demasiado, extraer subcomponentes y mantener la coordinacion en el componente raiz
-- Si un patron visual se repite, bajarlo a `src/components/ui`
+- Si una operacion toca Artemis, primero pensar en `src/lib/artemis/index.ts`
+- Si un componente pertenece a una feature concreta, vive en `src/features/<feature>/`
+- Si un patron visual se repite entre features, bajarlo a `src/ui/`
 - Si una proteccion existe solo para la demo, mantenerla fuera del flujo principal en `src/lib/demo-guard/`
 - Mantener `Explorer` como vista principal de trabajo y `Pulse` como vista de resumen
+- Tipos exclusivos de una feature van en `src/features/<feature>/types.ts`; tipos compartidos en `src/types/`

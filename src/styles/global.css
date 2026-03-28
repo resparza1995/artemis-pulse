@@ -201,6 +201,8 @@
 
   .app-select {
     appearance: none;
+    color-scheme: dark light;
+    cursor: pointer;
   }
 
   .app-toggle-shell {

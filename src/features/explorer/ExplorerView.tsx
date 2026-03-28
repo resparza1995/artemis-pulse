@@ -688,6 +688,20 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     });
   }
 
+  function handleRetryAll() {
+    const allIds = (messagesQuery.data?.items ?? []).map((m) => m.messageId);
+    if (allIds.length === 0) return;
+    setSelectedMessageIds(allIds);
+    setIsRetryOpen(true);
+  }
+
+  function handleMoveAll() {
+    const allIds = (messagesQuery.data?.items ?? []).map((m) => m.messageId);
+    if (allIds.length === 0) return;
+    setSelectedMessageIds(allIds);
+    setIsMoveOpen(true);
+  }
+
   useEffect(() => {
     return () => {
       if (modalSwitchTimeoutRef.current) {
@@ -826,6 +840,8 @@ function ExplorerViewContent(_: ExplorerViewProps) {
             onOpenDeleteQueue={() => setIsDeleteQueueOpen(true)}
             onOpenRetry={() => setIsRetryOpen(true)}
             onOpenMove={() => setIsMoveOpen(true)}
+            onRetryAll={handleRetryAll}
+            onMoveAll={handleMoveAll}
             canRetrySelection={canRetrySelection}
           />
 

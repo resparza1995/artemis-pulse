@@ -19,9 +19,11 @@ Permite:
 - consumir mensajes desde la UI
 - limpiar una cola completa
 - eliminar queues
-- eliminar addresses por nombre
+- eliminar addresses por nombre (con opcion de borrar en cascada sus colas)
 - mover mensajes a otra queue
 - reintentar mensajes desde DLQ cuando el destino original es resoluble
+- **Retry All**: reintentar todos los mensajes de una DLQ en un solo clic
+- **Move All**: mover todos los mensajes de una DLQ a otra cola en un solo clic
 - cambiar perfiles demo desde `Pulse`
 
 No permite todavia:
@@ -125,16 +127,19 @@ Flujo:
 ### 5. Eliminar una address
 Se puede:
 - eliminar una address usando un selector filtrable o la seleccion actual pre-rellenada
+- marcar la opcion **Eliminar colas asociadas** para borrar en cascada todas las colas de esa address y sus mensajes antes de eliminarla
 
 Flujo:
 1. Ir a `/explorer`
 2. Pulsar `Gestion`
 3. Elegir `Eliminar address`
 4. Seleccionar o filtrar la address
-5. Ejecutar la accion
+5. (Opcional) Marcar "Eliminar colas asociadas" si hay queues
+6. Ejecutar la accion
 
 Importante:
-- si la address todavia tiene queues asociadas, Artemis rechazara la operacion
+- sin la opcion marcada, si la address tiene queues, Artemis rechazara la operacion
+- con la opcion marcada, se eliminan primero todas las colas y despues la address
 - es una accion destructiva
 
 ### 6. Crear una queue
@@ -275,6 +280,21 @@ Importante:
 - la operacion puede terminar con exito parcial
 - es una accion operativa, no solo de lectura
 
+### 14. Retry All y Move All (DLQ)
+Cuando la cola seleccionada es una DLQ y tiene mensajes cargados, aparece un banner especial con dos acciones de bulto:
+
+**Retry All**:
+- Selecciona automaticamente todos los mensajes cargados de la DLQ
+- Abre el modal de Retry con el resumen completo
+- El usuario confirma la operacion
+- Util para DLQs con mensajes que todos tienen destino original resoluble
+
+**Move All**:
+- Selecciona automaticamente todos los mensajes cargados de la DLQ
+- Abre el modal de Move para elegir la cola destino
+- El usuario confirma la operacion
+- Util para redirigir todos los mensajes de una DLQ a otra cola de tratamiento
+
 ## Flujos practicos que ya se pueden seguir
 
 ### Flujo A. Preparar una prueba desde cero
@@ -293,10 +313,9 @@ Importante:
 
 ### Flujo C. Inspeccionar y recuperar mensajes de una DLQ
 1. Abrir la DLQ afectada
-2. Filtrar por `messageId`, `content-type` o preview
-3. Seleccionar uno o varios mensajes
-4. Usar `Retry` si el origen es resoluble
-5. Usar `Move` si necesitas elegir destino manual
+2. Si quieres recuperar todo de golpe: pulsar **Retry All** del banner DLQ (si todos tienen destino conocido)
+3. Si los destinos son heterogeneos o quieres elegir destino: pulsar **Move All** y elegir cola
+4. Si quieres operar mensaje a mensaje: filtrar, seleccionar y usar `Retry` o `Move` individual
 
 ### Flujo D. Validar que una aplicacion consume bien
 1. Seleccionar la queue de trabajo

@@ -56,6 +56,8 @@ type ExplorerMessagesPanelProps = {
   onOpenDeleteQueue: () => void;
   onOpenRetry: () => void;
   onOpenMove: () => void;
+  onRetryAll: () => void;
+  onMoveAll: () => void;
   canRetrySelection: boolean;
 };
 
@@ -104,6 +106,8 @@ export function ExplorerMessagesPanel({
   onOpenDeleteQueue,
   onOpenRetry,
   onOpenMove,
+  onRetryAll,
+  onMoveAll,
   canRetrySelection,
 }: ExplorerMessagesPanelProps) {
   const selectedVisibleCount = items.filter((message) => selectedMessageIds.includes(message.messageId)).length;
@@ -149,7 +153,31 @@ export function ExplorerMessagesPanel({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
+      {queue?.isDlq && data && data.items.length > 0 ? (
+        <div className="flex flex-none flex-wrap items-center gap-3 border-b border-[color:var(--border)] bg-[color:var(--surface-raised)] px-5 py-2.5 text-sm">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-600 dark:bg-red-500/15 dark:text-red-400">
+            DLQ
+          </span>
+          <span className="text-muted-foreground">{data.items.length} mensaje(s) pendientes de procesar</span>
+          <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              onClick={onRetryAll}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+            >
+              ↩ Retry All
+            </button>
+            <button
+              type="button"
+              onClick={onMoveAll}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              → Move All
+            </button>
+          </div>
+        </div>
+      ) : null}
+            <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
         {!queue ? (
           <div className="flex h-full min-h-0 items-center justify-center px-6 text-center text-sm text-muted-foreground">
             Selecciona una queue desde el panel lateral para abrir sus mensajes.
@@ -192,7 +220,7 @@ export function ExplorerMessagesPanel({
               <select
                 value={String(messageLimit)}
                 onChange={(event) => onMessageLimitChange(Number(event.target.value) as 100 | 250 | 500)}
-                className="app-control app-select flex h-11 px-4 py-2 text-sm"
+                className="app-control app-select h-11 px-4 py-2 text-sm"
               >
                 <option value="100">100</option>
                 <option value="250">250</option>
@@ -201,7 +229,7 @@ export function ExplorerMessagesPanel({
               <select
                 value={messageSortKey}
                 onChange={(event) => onMessageSortKeyChange(event.target.value as MessageSortKey)}
-                className="app-control app-select flex h-11 px-4 py-2 text-sm"
+                className="app-control app-select h-11 px-4 py-2 text-sm"
               >
                 <option value="timestamp">Ordenar por hora</option>
                 <option value="priority">Ordenar por prioridad</option>
