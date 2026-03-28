@@ -288,3 +288,129 @@
     scrollbar-gutter: stable;
   }
 }
+
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(page-content) {
+    animation: app-page-out 140ms ease both;
+  }
+
+  ::view-transition-new(page-content) {
+    animation: app-page-in 220ms ease both;
+  }
+
+  ::view-transition-old(page-title) {
+    animation: app-title-out 140ms ease both;
+  }
+
+  ::view-transition-new(page-title) {
+    animation: app-title-in 220ms ease both;
+  }
+}
+
+@keyframes app-page-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.985);
+    filter: blur(2px);
+  }
+}
+
+@keyframes app-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(0.985);
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes app-title-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes app-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-modal-root {
+  pointer-events: none;
+}
+
+.app-modal-root[data-state="open"] {
+  pointer-events: auto;
+}
+
+.app-modal-backdrop {
+  opacity: 0;
+}
+
+.app-modal-surface {
+  opacity: 0;
+  transform: translateY(10px) scale(0.992);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-modal-backdrop {
+    transition: opacity 260ms ease;
+  }
+
+  .app-modal-surface {
+    transform-origin: center top;
+    transition:
+      opacity 280ms cubic-bezier(0.16, 1, 0.3, 1) 24ms,
+      transform 280ms cubic-bezier(0.16, 1, 0.3, 1) 24ms;
+    will-change: opacity, transform;
+  }
+
+  .app-modal-root[data-state="open"] .app-modal-backdrop {
+    opacity: 1;
+  }
+
+  .app-modal-root[data-state="open"] .app-modal-surface {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-modal-backdrop,
+  .app-modal-surface {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .app-modal-root[data-state="open"] .app-modal-backdrop,
+  .app-modal-root[data-state="open"] .app-modal-surface {
+    opacity: 1;
+    transform: none;
+  }
+}
+

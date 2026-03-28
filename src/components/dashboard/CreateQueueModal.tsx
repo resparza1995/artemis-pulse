@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
@@ -7,6 +7,7 @@ type CreateQueueModalProps = {
   open: boolean;
   initialAddress?: string;
   onClose: () => void;
+  onBack?: () => void;
   onSubmit: (payload: {
     address: string;
     queueName: string;
@@ -21,6 +22,7 @@ export function CreateQueueModal({
   open,
   initialAddress,
   onClose,
+  onBack,
   onSubmit,
   isPending,
   errorMessage,
@@ -46,13 +48,22 @@ export function CreateQueueModal({
       title="Nueva queue"
       description="Crea una queue y, si hace falta, su address asociada para preparar pruebas desde la propia UI."
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="create-queue-form" disabled={isPending}>
-            {isPending ? "Creando..." : "Crear queue"}
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            {onBack ? (
+              <Button type="button" variant="ghost" onClick={onBack} disabled={isPending}>
+                Atras
+              </Button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="create-queue-form" disabled={isPending}>
+              {isPending ? "Creando..." : "Crear queue"}
+            </Button>
+          </div>
         </div>
       }
     >

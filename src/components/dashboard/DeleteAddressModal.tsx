@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
@@ -7,6 +7,7 @@ type DeleteAddressModalProps = {
   open: boolean;
   initialAddress?: string;
   onClose: () => void;
+  onBack?: () => void;
   onConfirm: (address: string) => Promise<void>;
   isPending: boolean;
   errorMessage?: string;
@@ -16,6 +17,7 @@ export function DeleteAddressModal({
   open,
   initialAddress,
   onClose,
+  onBack,
   onConfirm,
   isPending,
   errorMessage,
@@ -37,18 +39,27 @@ export function DeleteAddressModal({
       title="Eliminar address"
       description="El broker rechazara la operacion si la address todavia tiene queues asociadas. Puedes editar el nombre antes de confirmar."
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => void onConfirm(address)}
-            disabled={isPending || !canDelete}
-          >
-            {isPending ? "Eliminando..." : "Eliminar address"}
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            {onBack ? (
+              <Button type="button" variant="ghost" onClick={onBack} disabled={isPending}>
+                Atras
+              </Button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void onConfirm(address)}
+              disabled={isPending || !canDelete}
+            >
+              {isPending ? "Eliminando..." : "Eliminar address"}
+            </Button>
+          </div>
         </div>
       }
     >

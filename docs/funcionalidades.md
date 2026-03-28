@@ -9,6 +9,9 @@ Permite:
 - buscar y seleccionar una queue
 - ver mensajes sin consumirlos automaticamente
 - ver el detalle del mensaje seleccionado
+- filtrar y ordenar los mensajes cargados
+- cargar `100`, `250` o `500` mensajes por queue
+- seleccionar uno o varios mensajes para operar en lote
 - crear addresses
 - crear queues
 - publicar uno o varios mensajes de prueba
@@ -16,15 +19,16 @@ Permite:
 - limpiar una cola completa
 - eliminar queues
 - eliminar addresses por nombre
+- mover mensajes a otra queue
+- reintentar mensajes desde DLQ cuando el destino original es resoluble
 
 No permite todavia:
 - crear consumers persistentes tipo servicio conectado
-- reintentar mensajes a otra queue
-- mover mensajes manualmente entre queues
+- paginacion real por offset
 - editar mensajes ya existentes
-- paginacion real de mensajes
 - historial de acciones
 - listar addresses vacias como vista separada
+- requeue selectivo con selector avanzado
 
 ## Vistas disponibles
 
@@ -45,9 +49,10 @@ Vista principal de trabajo.
 Uso actual:
 - navegar por `address -> queue`
 - buscar queues o addresses
-- ver hasta 100 mensajes por queue
+- ver y filtrar mensajes
 - abrir detalle de un mensaje
-- ejecutar acciones operativas desde modal
+- ejecutar acciones operativas desde modales
+- administrar addresses y queues desde el modal `Gestion`
 
 ## Acciones disponibles hoy
 
@@ -66,62 +71,77 @@ Flujo:
 
 ### 2. Ver mensajes
 Se puede:
-- cargar hasta 100 mensajes de la queue seleccionada
+- cargar `100`, `250` o `500` mensajes de la queue seleccionada
 - ver metadatos basicos del mensaje
 - ver `content-type`
 - ver preview del body
+- ver origen original cuando el broker lo expone
 - abrir el body completo del mensaje seleccionado
 - ver headers y properties
+- filtrar por `messageId`, `content-type` o `preview`
+- ordenar por hora, prioridad o tamano
 
 Importante:
 - la lectura se hace con `browse()`
 - abrir un mensaje no lo consume ni lo elimina
+- el filtro y la ordenacion trabajan sobre los mensajes ya cargados en cliente
 
-### 3. Crear una address
+### 3. Gestionar addresses y queues
 Se puede:
-- crear una address nueva desde el sidebar
+- abrir el modal `Gestion` desde el sidebar
+- crear una address nueva
+- crear una queue nueva
+- eliminar una address por nombre
+- ver el contexto actual de queue/address seleccionada
+
+Importante:
+- una address vacia no aparece en el arbol lateral hasta que tenga alguna queue asociada
+- esa limitacion se explica dentro del propio modal `Gestion`
+
+### 4. Crear una address
+Se puede:
+- crear una address nueva desde `Gestion`
 - elegir `ANYCAST` o `MULTICAST`
 
 Flujo:
 1. Ir a `/explorer`
-2. Pulsar `Address`
-3. Rellenar el nombre de la address
-4. Elegir `routing type`
-5. Confirmar en el modal
+2. Pulsar `Gestion`
+3. Elegir `Nueva address`
+4. Rellenar el nombre de la address
+5. Elegir `routing type`
+6. Confirmar en el modal
 
-Importante:
-- una address recien creada no aparece en el arbol lateral hasta que tenga alguna queue asociada
-- aun asi puede usarse despues para crear una queue o eliminarse por nombre
-
-### 4. Eliminar una address
+### 5. Eliminar una address
 Se puede:
 - eliminar una address escribiendo su nombre o usando el valor pre-rellenado de la seleccion actual
 
 Flujo:
 1. Ir a `/explorer`
-2. Pulsar `Eliminar address`
-3. Confirmar o editar el nombre de la address
-4. Ejecutar la accion
+2. Pulsar `Gestion`
+3. Elegir `Eliminar address`
+4. Confirmar o editar el nombre de la address
+5. Ejecutar la accion
 
 Importante:
 - si la address todavia tiene queues asociadas, Artemis rechazara la operacion
 - es una accion destructiva
 
-### 5. Crear una queue
+### 6. Crear una queue
 Se puede:
-- crear una queue nueva desde el boton `Queue`
+- crear una queue nueva desde `Gestion`
 - crear tambien la address asociada si no existia
 - elegir `ANYCAST` o `MULTICAST`
 - decidir si la queue es durable
 
 Flujo:
 1. Ir a `/explorer`
-2. Pulsar `Queue`
-3. Rellenar `address`, `queue name`, `routing type` y `durable`
-4. Confirmar en el modal
-5. La nueva queue aparece en el arbol lateral
+2. Pulsar `Gestion`
+3. Elegir `Nueva queue`
+4. Rellenar `address`, `queue name`, `routing type` y `durable`
+5. Confirmar en el modal
+6. La nueva queue aparece en el arbol lateral
 
-### 6. Eliminar una queue
+### 7. Eliminar una queue
 Se puede:
 - eliminar la queue seleccionada desde el panel central
 
@@ -136,7 +156,7 @@ Importante:
 - la address asociada se conserva
 - es una accion destructiva
 
-### 7. Publicar mensajes
+### 8. Publicar mensajes
 Se puede:
 - publicar uno o varios mensajes de prueba en la queue seleccionada
 - indicar body libre
@@ -151,14 +171,9 @@ Flujo:
 4. Rellenar `body`
 5. Opcionalmente anadir headers
 6. Confirmar
-7. La lista puede refrescarse para ver los mensajes generados
+7. Refrescar o dejar que la vista recargue la lista manualmente
 
-Importante:
-- el mensaje se publica sobre la address de la queue seleccionada
-- el mismo body se envia `N` veces segun el contador indicado
-- el body se envia y despues puede leerse desde la propia UI
-
-### 8. Consumir mensajes
+### 9. Consumir mensajes
 Se puede:
 - consumir `N` mensajes desde la UI
 - usar un consumer temporal de prueba
@@ -176,7 +191,7 @@ Importante:
 - internamente lee mensajes visibles y los elimina de la cola
 - es una accion destructiva
 
-### 9. Limpiar una cola
+### 10. Limpiar una cola
 Se puede:
 - eliminar todos los mensajes de la queue seleccionada
 
@@ -190,10 +205,56 @@ Importante:
 - esta accion es destructiva
 - elimina todos los mensajes pendientes de la cola
 
+### 11. Seleccionar mensajes por lote
+Se puede:
+- seleccionar mensajes individuales con checkbox
+- seleccionar todos los visibles
+- limpiar la seleccion actual
+- lanzar acciones por lote desde la toolbar contextual
+
+Importante:
+- la seleccion se mantiene solo mientras los mensajes sigan visibles en la vista filtrada/cargada
+
+### 12. Retry de mensajes
+Se puede:
+- reintentar mensajes seleccionados desde una DLQ
+- usar el destino original solo cuando el broker lo expone de forma segura
+
+Flujo:
+1. Abrir una DLQ en `/explorer`
+2. Seleccionar uno o varios mensajes
+3. Pulsar `Retry`
+4. Revisar el resumen del modal
+5. Confirmar la operacion
+6. La lista y los contadores se refrescan
+
+Importante:
+- solo se reintentan de forma automatica los mensajes con metadato de origen utilizable
+- si un mensaje no tiene origen resoluble, debes usar `Move`
+- la operacion puede terminar con exito parcial
+
+### 13. Move de mensajes
+Se puede:
+- mover uno o varios mensajes seleccionados a otra queue
+- elegir la queue destino desde un modal
+
+Flujo:
+1. Seleccionar una queue origen en `/explorer`
+2. Marcar uno o varios mensajes
+3. Pulsar `Move`
+4. Elegir la queue destino
+5. Confirmar
+6. La lista y los contadores se actualizan
+
+Importante:
+- la queue destino debe ser distinta de la queue origen
+- la operacion puede terminar con exito parcial
+- es una accion operativa, no solo de lectura
+
 ## Flujos practicos que ya se pueden seguir
 
 ### Flujo A. Preparar una prueba desde cero
-1. Crear una address
+1. Crear una address desde `Gestion`
 2. Crear una queue asociada
 3. Publicar uno o varios mensajes
 4. Abrirlos en la lista
@@ -206,32 +267,32 @@ Importante:
 4. Confirmar el body
 5. Ver la cantidad generada en la lista y en el backlog
 
-### Flujo C. Validar que una aplicacion consume bien
+### Flujo C. Inspeccionar y recuperar mensajes de una DLQ
+1. Abrir la DLQ afectada
+2. Filtrar por `messageId`, `content-type` o preview
+3. Seleccionar uno o varios mensajes
+4. Usar `Retry` si el origen es resoluble
+5. Usar `Move` si necesitas elegir destino manual
+
+### Flujo D. Validar que una aplicacion consume bien
 1. Seleccionar la queue de trabajo
 2. Publicar mensajes de prueba
 3. Ver si la aplicacion real los consume
 4. Si hace falta, usar `Consume` manual para vaciar algunos mensajes de prueba
 
-### Flujo D. Limpiar entorno de pruebas
+### Flujo E. Limpiar entorno de pruebas
 1. Seleccionar la queue usada en pruebas
 2. Revisar los mensajes pendientes
 3. Usar `Limpiar` para dejar la queue vacia
 4. Si ya no hace falta la queue, usar `Eliminar queue`
 5. Si tampoco hace falta la address, usar `Eliminar address`
 
-### Flujo E. Inspeccionar un fallo de datos
-1. Abrir `/explorer`
-2. Buscar la queue o DLQ afectada
-3. Abrir un mensaje
-4. Revisar body, headers y properties
-5. Decidir si publicas nuevos mensajes de prueba, consumes algunos o limpias la cola
-
 ## Limitaciones actuales
 
 ### Lectura de mensajes
-- se muestran hasta 100 mensajes por queue
-- no hay paginacion real
-- si hay muchos mensajes, la vista se trunca
+- se muestran hasta `500` mensajes por queue
+- no hay paginacion real por offset
+- si hay mas mensajes de los cargados, la vista sigue truncada
 
 ### Addresses
 - el arbol lateral se construye a partir de queues
@@ -244,12 +305,12 @@ Importante:
 - el boton `Consume` no crea un proceso largo; ejecuta una accion puntual
 
 ### Operaciones que todavia no existen
-- retry a cola original
-- move a otra queue
-- requeue selectivo
+- paginacion real por offset
+- retry con reglas avanzadas o filtros
+- move con selector mas complejo o plantillas
+- requeue selectivo por expresion
 - consume con selector/filtro
 - ack parcial avanzado
-- envio por lotes con plantillas distintas
 - simulador de carga completo
 
 ## Acciones destructivas
@@ -259,6 +320,8 @@ Estas acciones modifican o eliminan datos del broker:
 - `Limpiar`
 - `Eliminar queue`
 - `Eliminar address`
+- `Move`
+- `Retry`
 
 Estas acciones no son destructivas:
 - buscar queues
@@ -267,10 +330,12 @@ Estas acciones no son destructivas:
 - crear address
 - crear queue
 - publicar mensajes
+- filtrar y ordenar la lista
 
 ## Recomendacion de uso
 
 Para trabajo diario, el flujo recomendado hoy es:
 1. usar `Pulse` solo para orientarte
 2. entrar en `Explorer` para trabajar de verdad
-3. usar `Address`, `Queue`, `Publish`, `Consume`, `Limpiar`, `Eliminar queue` y `Eliminar address` como herramientas de soporte para pruebas y limpieza consciente
+3. usar `Gestion` para preparar o limpiar estructuras
+4. usar `Publish`, `Consume`, `Limpiar`, `Retry` y `Move` como herramientas de soporte para pruebas e incidencias

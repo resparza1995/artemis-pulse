@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Search, Settings2 } from "lucide-react";
+﻿import { ChevronDown, ChevronRight, Search, Settings2 } from "lucide-react";
 import type { QueueSummary } from "../../types/queues";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -43,8 +43,8 @@ export function ExplorerSidebar({
   const totalQueues = groups.reduce((total, group) => total + group.queues.length, 0);
 
   return (
-    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] overflow-hidden flex flex-col">
-      <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+      <CardHeader className="flex-none gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>Queues</CardTitle>
           <Badge variant="neutral">{numberFormatter.format(totalQueues)} visibles</Badge>
@@ -65,7 +65,7 @@ export function ExplorerSidebar({
           />
         </label>
       </CardHeader>
-      <CardContent className="px-0 pb-0 flex-1 overflow-y-auto">
+      <CardContent className="min-h-0 flex-1 overflow-hidden px-0 pb-0">
         {isLoading ? (
           <div className="px-5 py-6 text-sm text-muted-foreground">Cargando queues...</div>
         ) : null}
@@ -83,7 +83,7 @@ export function ExplorerSidebar({
         ) : null}
 
         {!isLoading && !isError ? (
-          <div className="overflow-y-auto pb-4">
+          <div className="app-scroll-y h-full pb-4">
             {groups.map((group) => {
               const isExpanded = expandedAddresses[group.address] ?? true;
 
@@ -148,5 +148,5 @@ export function ExplorerSidebar({
         ) : null}
       </CardContent>
     </Card>
-  );
+  )
 }

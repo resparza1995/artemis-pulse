@@ -1,4 +1,4 @@
-import {
+﻿import {
   QueryClient,
   QueryClientProvider,
   useMutation,
@@ -11,11 +11,13 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
   AddressDeleteResponse,
-  ExplorerMessageDetail,  MessageActionType,
+  ExplorerMessageDetail,
+  MessageActionType,
   PublishMessageResponse,
   QueueConsumeResponse,
   QueueDeleteResponse,
@@ -37,6 +39,7 @@ import { MoveMessagesModal } from "./MoveMessagesModal";
 import { PublishMessageModal } from "./PublishMessageModal";
 import { PurgeQueueModal } from "./PurgeQueueModal";
 import { RetryMessagesModal } from "./RetryMessagesModal";
+import { MODAL_TRANSITION_MS } from "../ui/modal";
 
 type ExplorerViewProps = {
   brokerLabel: string;
@@ -316,6 +319,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const [isRetryOpen, setIsRetryOpen] = useState(false);
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [operationNotice, setOperationNotice] = useState<OperationNotice | null>(null);
+  const modalSwitchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredSearch = useDeferredValue(search);
   const deferredMessageFilter = useDeferredValue(messageFilter);
 
@@ -651,29 +655,66 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     });
   }
 
+  useEffect(() => {
+    return () => {
+      if (modalSwitchTimeoutRef.current) {
+        clearTimeout(modalSwitchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function scheduleModalSwitch(action: () => void) {
+    if (modalSwitchTimeoutRef.current) {
+      clearTimeout(modalSwitchTimeoutRef.current);
+    }
+
+    modalSwitchTimeoutRef.current = setTimeout(() => {
+      action();
+      modalSwitchTimeoutRef.current = null;
+    }, Math.max(MODAL_TRANSITION_MS - 40, 140));
+  }
 
   function openCreateAddressFromAdmin() {
     setIsAdminOpen(false);
-    setIsCreateAddressOpen(true);
+    scheduleModalSwitch(() => setIsCreateAddressOpen(true));
   }
 
   function openCreateQueueFromAdmin() {
     setIsAdminOpen(false);
-    setIsCreateQueueOpen(true);
+    scheduleModalSwitch(() => setIsCreateQueueOpen(true));
   }
 
   function openDeleteAddressFromAdmin() {
     setIsAdminOpen(false);
-    setIsDeleteAddressOpen(true);
+    scheduleModalSwitch(() => setIsDeleteAddressOpen(true));
+  }
+
+  function returnToAdmin(from: "create-address" | "create-queue" | "delete-address") {
+    if (from === "create-address") {
+      setIsCreateAddressOpen(false);
+      createAddressMutation.reset();
+    }
+
+    if (from === "create-queue") {
+      setIsCreateQueueOpen(false);
+      createQueueMutation.reset();
+    }
+
+    if (from === "delete-address") {
+      setIsDeleteAddressOpen(false);
+      deleteAddressMutation.reset();
+    }
+
+    scheduleModalSwitch(() => setIsAdminOpen(true));
   }
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
         {operationNotice ? (
           <div
             className={[
-              "app-notice flex items-center gap-2 text-sm",
+              "app-notice flex flex-none items-center gap-2 text-sm",
               operationNotice.tone === "success" ? "app-notice-success" : "app-notice-warning",
             ].join(" ")}
           >
@@ -693,7 +734,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
           </div>
         ) : null}
 
-        <section className="grid h-[calc(100vh-220px)] gap-4 overflow-y-auto xl:grid-cols-[280px_minmax(0,1fr)_380px]">
+        <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
           <ExplorerSidebar
             search={search}
             onSearchChange={(value) => {
@@ -787,6 +828,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
             createAddressMutation.reset();
           }
         }}
+        onBack={() => returnToAdmin("create-address")}
         onSubmit={async (payload) => {
           await createAddressMutation.mutateAsync(payload);
         }}
@@ -803,6 +845,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
             createQueueMutation.reset();
           }
         }}
+        onBack={() => returnToAdmin("create-queue")}
         onSubmit={async (payload) => {
           await createQueueMutation.mutateAsync(payload);
         }}
@@ -883,6 +926,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
             deleteAddressMutation.reset();
           }
         }}
+        onBack={() => returnToAdmin("delete-address")}
         onConfirm={async (address) => {
           await deleteAddressMutation.mutateAsync(address);
         }}
@@ -947,5 +991,14 @@ export default function ExplorerView(props: ExplorerViewProps) {
     </QueryClientProvider>
   );
 }
+
+
+
+
+
+
+
+
+
 
 

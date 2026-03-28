@@ -1,3 +1,5 @@
+﻿import type { ReactNode } from 'react';
+import { Building2, FolderPlus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
 
@@ -10,6 +12,32 @@ type ExplorerAdminModalProps = {
   onOpenCreateQueue: () => void;
   onOpenDeleteAddress: () => void;
 };
+
+function ActionCard({
+  title,
+  description,
+  icon,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="app-panel-soft flex h-full flex-col gap-3 p-4 text-left transition hover:bg-[rgba(255,255,255,0.05)]"
+      onClick={onClick}
+    >
+      <div className="app-icon-chip flex h-10 w-10 items-center justify-center">{icon}</div>
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </button>
+  );
+}
 
 export function ExplorerAdminModal({
   open,
@@ -24,8 +52,9 @@ export function ExplorerAdminModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Gestion rapida"
-      description="Accesos directos para administrar addresses y queues sin salir de Explorer."
+      title="Gestion"
+      description="Acciones rapidas para addresses y queues."
+      className="max-w-3xl"
       footer={
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -35,57 +64,47 @@ export function ExplorerAdminModal({
       }
     >
       <div className="space-y-4">
-        <div className="app-notice app-notice-neutral text-sm">
-          Las addresses vacias no aparecen en el arbol lateral porque Explorer agrupa a partir de las queues. Puedes crearlas aqui y asociarles una queue despues.
+        <div className="app-panel-inset px-4 py-3 text-sm text-muted-foreground">
+          Las addresses vacias no aparecen en el arbol lateral hasta que tienen queues asociadas.
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <button
-            type="button"
-            className="app-panel-soft space-y-2 p-4 text-left transition hover:bg-[rgba(255,255,255,0.05)]"
+          <ActionCard
+            title="Nueva address"
+            description="Prepara una address nueva para pruebas o para futuras queues."
+            icon={<Building2 className="h-4 w-4 text-primary" />}
             onClick={onOpenCreateAddress}
-          >
-            <p className="text-sm font-semibold text-foreground">Nueva address</p>
-            <p className="text-sm text-muted-foreground">
-              Crea una address independiente para pruebas o para preparar nuevas queues.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            className="app-panel-soft space-y-2 p-4 text-left transition hover:bg-[rgba(255,255,255,0.05)]"
+          />
+          <ActionCard
+            title="Nueva queue"
+            description="Crea una queue sobre la address actual o sobre una nueva."
+            icon={<FolderPlus className="h-4 w-4 text-primary" />}
             onClick={onOpenCreateQueue}
-          >
-            <p className="text-sm font-semibold text-foreground">Nueva queue</p>
-            <p className="text-sm text-muted-foreground">
-              Crea una queue en la address actual o en una nueva address.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            className="app-panel-soft space-y-2 p-4 text-left transition hover:bg-[rgba(255,255,255,0.05)]"
+          />
+          <ActionCard
+            title="Eliminar address"
+            description="Borra una address de pruebas. Artemis la rechazara si aun tiene queues."
+            icon={<Trash2 className="h-4 w-4 text-primary" />}
             onClick={onOpenDeleteAddress}
-          >
-            <p className="text-sm font-semibold text-foreground">Eliminar address</p>
-            <p className="text-sm text-muted-foreground">
-              Retira una address de pruebas. Si todavia tiene queues, Artemis rechazara la operacion.
-            </p>
-          </button>
+          />
         </div>
 
-        <div className="app-panel-soft space-y-2 p-4 text-sm">
-          <p className="font-semibold text-foreground">Contexto actual</p>
-          <p className="text-muted-foreground">
-            Address seleccionada: <span className="text-foreground">{selectedAddress ?? "ninguna"}</span>
-          </p>
-          <p className="text-muted-foreground">
-            Queue seleccionada: <span className="text-foreground">{selectedQueueName ?? "ninguna"}</span>
-          </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="app-panel-soft space-y-2 p-4 text-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Address actual
+            </p>
+            <p className="font-medium text-foreground">{selectedAddress ?? "ninguna"}</p>
+          </div>
+          <div className="app-panel-soft space-y-2 p-4 text-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Queue actual
+            </p>
+            <p className="font-medium text-foreground">{selectedQueueName ?? "ninguna"}</p>
+          </div>
         </div>
       </div>
     </Modal>
   );
 }
-
 

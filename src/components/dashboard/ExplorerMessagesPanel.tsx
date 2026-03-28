@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowUpDown,
   MoveRight,
   Redo2,
@@ -112,8 +112,8 @@ export function ExplorerMessagesPanel({
   const hasFilterNoMatches = Boolean(queue && data && data.items.length > 0 && items.length === 0 && messageFilter.trim().length > 0);
 
   return (
-    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] overflow-hidden">
-      <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+      <CardHeader className="flex-none gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <CardTitle>{queue ? queue.name : "Mensajes"}</CardTitle>
@@ -149,15 +149,15 @@ export function ExplorerMessagesPanel({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 overflow-y-auto max-h-[calc(100vh-260px)]">
+      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
         {!queue ? (
-          <div className="flex min-h-[540px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
+          <div className="flex h-full min-h-0 items-center justify-center px-6 text-center text-sm text-muted-foreground">
             Selecciona una queue desde el panel lateral para abrir sus mensajes.
           </div>
         ) : null}
 
         {queue && isLoading ? (
-          <div className="flex min-h-[540px] items-center justify-center px-6 text-sm text-muted-foreground">
+          <div className="flex h-full min-h-0 items-center justify-center px-6 text-sm text-muted-foreground">
             Cargando mensajes de la queue seleccionada...
           </div>
         ) : null}
@@ -169,8 +169,8 @@ export function ExplorerMessagesPanel({
         ) : null}
 
         {queue && !isLoading && !isError && data ? (
-          <div className="space-y-3 p-5">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex h-full min-h-0 flex-col gap-3 p-5">
+            <div className="flex flex-none flex-wrap items-center gap-2">
               <Badge variant="neutral">{numberFormatter.format(items.length)} visibles</Badge>
               <Badge variant="neutral">{numberFormatter.format(data.items.length)} cargados</Badge>
               {typeof data.totalKnownMessages === "number" ? (
@@ -183,7 +183,7 @@ export function ExplorerMessagesPanel({
               ) : null}
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_140px_180px_120px]">
+            <div className="grid flex-none gap-3 xl:grid-cols-[minmax(0,1fr)_140px_180px_120px]">
               <Input
                 value={messageFilter}
                 onChange={(event) => onMessageFilterChange(event.target.value)}
@@ -214,7 +214,7 @@ export function ExplorerMessagesPanel({
             </div>
 
             {hasSelection ? (
-              <div className="app-panel-soft flex flex-wrap items-center gap-2 p-3">
+              <div className="app-panel-soft flex flex-none flex-wrap items-center gap-2 p-3">
                 <Badge variant="neutral">{selectedMessageIds.length} seleccionados</Badge>
                 <Button variant="secondary" onClick={onOpenRetry} disabled={!canRetrySelection}>
                   <Redo2 className="h-4 w-4" />
@@ -231,15 +231,15 @@ export function ExplorerMessagesPanel({
             ) : null}
 
             {data.items.length === 0 ? (
-              <div className="app-empty-state flex min-h-[420px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
+              <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
                 Esta queue no tiene mensajes disponibles ahora mismo.
               </div>
             ) : hasFilterNoMatches ? (
-              <div className="app-empty-state flex min-h-[420px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
+              <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
                 No hay mensajes que coincidan con el filtro actual dentro de los mensajes cargados.
               </div>
             ) : (
-              <div className="app-table-shell overflow-x-auto">
+              <div className="app-table-shell min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -289,9 +289,7 @@ export function ExplorerMessagesPanel({
                           <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                             {renderTimestamp(message.timestamp)}
                           </TableCell>
-                          <TableCell className="text-right">
-                            {message.priority ?? "-"}
-                          </TableCell>
+                          <TableCell className="text-right">{message.priority ?? "-"}</TableCell>
                           <TableCell className="text-right">
                             {message.size !== null ? numberFormatter.format(message.size) : "-"}
                           </TableCell>

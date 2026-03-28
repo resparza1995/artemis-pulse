@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
@@ -7,6 +7,7 @@ type CreateAddressModalProps = {
   open: boolean;
   initialAddress?: string;
   onClose: () => void;
+  onBack?: () => void;
   onSubmit: (payload: {
     address: string;
     routingType: "ANYCAST" | "MULTICAST";
@@ -19,6 +20,7 @@ export function CreateAddressModal({
   open,
   initialAddress,
   onClose,
+  onBack,
   onSubmit,
   isPending,
   errorMessage,
@@ -40,13 +42,22 @@ export function CreateAddressModal({
       title="Nueva address"
       description="Crea una address independiente para preparar pruebas. Si no tiene queues asociadas, no aparecera todavia en el arbol lateral."
       footer={
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="create-address-form" disabled={isPending}>
-            {isPending ? "Creando..." : "Crear address"}
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            {onBack ? (
+              <Button type="button" variant="ghost" onClick={onBack} disabled={isPending}>
+                Atras
+              </Button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="create-address-form" disabled={isPending}>
+              {isPending ? "Creando..." : "Crear address"}
+            </Button>
+          </div>
         </div>
       }
     >

@@ -1,4 +1,4 @@
-﻿import * as React from "react";
+import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -12,6 +12,9 @@ type ModalProps = {
   className?: string;
 };
 
+export const MODAL_TRANSITION_MS = 260;
+const MODAL_OPEN_DELAY_MS = 28;
+
 export function Modal({
   open,
   title,
@@ -21,14 +24,64 @@ export function Modal({
   footer,
   className,
 }: ModalProps) {
-  if (!open) {
+  const [isMounted, setIsMounted] = React.useState(open);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    let enterTimer: ReturnType<typeof setTimeout> | undefined;
+    let exitTimer: ReturnType<typeof setTimeout> | undefined;
+
+    if (open) {
+      setIsMounted(true);
+      enterTimer = window.setTimeout(() => {
+        setIsVisible(true);
+      }, MODAL_OPEN_DELAY_MS);
+    } else if (isMounted) {
+      setIsVisible(false);
+      exitTimer = window.setTimeout(() => {
+        setIsMounted(false);
+      }, MODAL_TRANSITION_MS);
+    }
+
+    return () => {
+      if (enterTimer) {
+        window.clearTimeout(enterTimer);
+      }
+
+      if (exitTimer) {
+        window.clearTimeout(exitTimer);
+      }
+    };
+  }, [open, isMounted]);
+
+  React.useEffect(() => {
+    if (!isMounted) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMounted, onClose]);
+
+  if (!isMounted) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-8 backdrop-blur-sm">
+    <div
+      className="app-modal-root fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
+      data-state={isVisible ? "open" : "closed"}
+    >
       <div
-        className="absolute inset-0"
+        className="app-modal-backdrop absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -36,7 +89,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "app-modal relative z-10 flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden",
+          "app-modal app-modal-surface relative z-10 flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden",
           className,
         )}
       >

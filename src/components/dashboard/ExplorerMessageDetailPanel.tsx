@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { FileSearch, RefreshCw } from "lucide-react";
 import type { ExplorerMessageDetail } from "../../types/explorer";
 import type { QueueSummary } from "../../types/queues";
@@ -139,8 +139,8 @@ export function ExplorerMessageDetailPanel({
   const formattedBody = formatBody(detail?.body ?? null);
 
   return (
-    <Card className="min-h-[360px] max-h-[calc(100vh-180px)] xl:sticky xl:top-6 overflow-hidden">
-      <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+      <CardHeader className="flex-none gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <CardTitle>Detalle del mensaje</CardTitle>
@@ -160,7 +160,7 @@ export function ExplorerMessageDetailPanel({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 pt-5 overflow-y-auto max-h-[calc(100vh-260px)]">
+      <CardContent className="app-scroll-y min-h-0 flex-1 space-y-4 pt-5">
         {!queue ? (
           <div className="app-empty-state p-4 text-sm text-muted-foreground">
             Todavia no hay una queue seleccionada.
