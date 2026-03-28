@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createAddress } from "../../lib/artemis";
+import { DemoGuardError, enforceDemoPolicy } from "../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../lib/jolokia";
 
 type CreateAddressPayload = {
@@ -29,6 +30,12 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
+    enforceDemoPolicy({
+      request,
+      action: "create-address",
+      resources: [payload.address ?? ""],
+    });
+
     const address = await createAddress({
       address: payload.address ?? "",
       routingType: payload.routingType ?? "ANYCAST",
@@ -42,7 +49,11 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
+    const status = error instanceof DemoGuardError
+      ? error.statusCode
+      : error instanceof JolokiaRequestError
+        ? error.statusCode
+        : 502;
     const message =
       error instanceof Error
         ? error.message

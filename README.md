@@ -41,6 +41,24 @@ bun run dev
 http://localhost:4321
 ```
 
+## Modo demo
+
+La app incluye un simulador para generar trafico y alternar escenarios desde `Pulse`.
+
+Documentacion completa:
+- [docs/demo-mode.md](./docs/demo-mode.md)
+
+### Arranque rapido con Docker
+
+```bash
+docker compose up --build
+```
+
+Servicios:
+- App: `http://localhost:4321`
+- Artemis: `http://localhost:8161`
+- Simulador demo: `http://localhost:7071`
+
 ## Vistas planeadas
 
 ### Pulse

@@ -1,11 +1,18 @@
-﻿import {
+import {
   Activity,
   AlertOctagon,
   DatabaseZap,
   Server,
 } from "lucide-react";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
+import type { DemoProfileApplyResponse, DemoProfileState } from "../../types/demo";
 import type { BrokerMetrics, QueueSummary } from "../../types/queues";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -21,6 +28,35 @@ type QueueDashboardProps = {
 type QueueApiError = {
   message?: string;
 };
+
+function getApiErrorMessage(payload: unknown) {
+  return payload &&
+    typeof payload === "object" &&
+    "message" in payload &&
+    typeof payload.message === "string"
+    ? payload.message
+    : null;
+}
+
+function isDemoProfileState(payload: unknown): payload is DemoProfileState {
+  return Boolean(
+    payload &&
+      typeof payload === "object" &&
+      "enabled" in payload &&
+      typeof payload.enabled === "boolean" &&
+      "profiles" in payload &&
+      Array.isArray(payload.profiles),
+  );
+}
+
+function isDemoProfileApplyResponse(payload: unknown): payload is DemoProfileApplyResponse {
+  return Boolean(
+    payload &&
+      typeof payload === "object" &&
+      "appliedProfile" in payload &&
+      typeof payload.appliedProfile === "string",
+  );
+}
 
 async function fetchQueues() {
   const response = await fetch("/api/queues", {
@@ -39,7 +75,7 @@ async function fetchQueues() {
 
   if (!response.ok) {
     throw new Error(
-      (payload && !Array.isArray(payload) && payload.message) ||
+      getApiErrorMessage(payload) ||
         "No se pudieron obtener las colas.",
     );
   }
@@ -82,11 +118,75 @@ async function fetchBrokerMetrics() {
   return payload as BrokerMetrics;
 }
 
+async function fetchDemoProfileState() {
+  const response = await fetch("/api/demo/profile", {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  let payload: unknown = null;
+
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(payload) ||
+        "No se pudo obtener el estado del simulador demo.",
+    );
+  }
+
+  if (!isDemoProfileState(payload)) {
+    throw new Error("La respuesta de perfiles demo no tiene el formato esperado.");
+  }
+
+  return payload;
+}
+
+async function applyDemoProfile(profile: string) {
+  const response = await fetch("/api/demo/profile", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ profile }),
+  });
+
+  let payload: unknown = null;
+
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(payload) ||
+        "No se pudo aplicar el perfil demo.",
+    );
+  }
+
+  if (!isDemoProfileApplyResponse(payload)) {
+    throw new Error("La respuesta de aplicar perfil demo no tiene el formato esperado.");
+  }
+
+  return payload;
+}
+
 function QueueDashboardContent({
   pollIntervalMs,
   brokerLabel,
 }: QueueDashboardProps) {
+  const queryClient = useQueryClient();
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [selectedDemoProfile, setSelectedDemoProfile] = useState("");
+  const [demoNotice, setDemoNotice] = useState<string | null>(null);
 
   const queuesQuery = useQuery({
     queryKey: ["queues"],
@@ -104,8 +204,41 @@ function QueueDashboardContent({
     retry: 1,
   });
 
+  const demoProfileQuery = useQuery({
+    queryKey: ["demoProfileState"],
+    queryFn: fetchDemoProfileState,
+    refetchInterval: pollIntervalMs * 2,
+    refetchIntervalInBackground: true,
+    retry: 0,
+  });
+
+  const applyDemoProfileMutation = useMutation({
+    mutationFn: applyDemoProfile,
+    onSuccess: async (result) => {
+      setDemoNotice(`Perfil "${result.appliedProfile}" aplicado. Escenario reseteado.`);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["demoProfileState"] }),
+        queryClient.invalidateQueries({ queryKey: ["queues"] }),
+        queryClient.invalidateQueries({ queryKey: ["brokerMetrics"] }),
+      ]);
+
+      await Promise.all([queuesQuery.refetch(), brokerMetricsQuery.refetch()]);
+    },
+    onError: (error) => {
+      setDemoNotice(
+        error instanceof Error
+          ? `No se pudo aplicar el perfil: ${error.message}`
+          : "No se pudo aplicar el perfil demo.",
+      );
+    },
+  });
+
   const queues = queuesQuery.data ?? [];
   const metrics = brokerMetricsQuery.data;
+  const demoProfileState = demoProfileQuery.data;
+  const demoControlEnabled = demoProfileState?.enabled ?? false;
+  const availableProfiles: string[] = demoProfileState?.profiles ?? [];
 
   const totalQueues = queues.length;
   const totalMessages = queues.reduce((sum, queue) => sum + queue.messageCount, 0);
@@ -138,11 +271,18 @@ function QueueDashboardContent({
       }).format(new Date(queuesQuery.dataUpdatedAt))
     : "sin datos";
 
+  const effectiveSelectedProfile =
+    selectedDemoProfile || demoProfileState?.currentProfile || availableProfiles[0] || "";
+
   async function handleManualRefresh() {
     setIsManualRefreshing(true);
 
     try {
-      await Promise.all([queuesQuery.refetch(), brokerMetricsQuery.refetch()]);
+      await Promise.all([
+        queuesQuery.refetch(),
+        brokerMetricsQuery.refetch(),
+        demoProfileQuery.refetch(),
+      ]);
     } finally {
       setIsManualRefreshing(false);
     }
@@ -174,11 +314,103 @@ function QueueDashboardContent({
             </Button>
           </div>
 
+          <div className="app-panel-soft flex flex-wrap items-center gap-2 rounded-xl px-3 py-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Modo demo
+            </span>
+            <Badge
+              variant={
+                demoProfileQuery.isError
+                  ? "critical"
+                  : demoControlEnabled
+                    ? "success"
+                    : "warning"
+              }
+            >
+              {demoProfileQuery.isError
+                ? "Error"
+                : demoControlEnabled
+                  ? "Activo"
+                  : "Desactivado"}
+            </Badge>
+
+            {demoControlEnabled ? (
+              <>
+                <span className="text-xs text-muted-foreground">Perfil</span>
+                <div className="flex flex-wrap items-center gap-1 rounded-full border border-[var(--border)] bg-[rgba(255,255,255,0.03)] p-1">
+                  {availableProfiles.map((profile: string) => {
+                    const isSelected = profile === effectiveSelectedProfile;
+                    return (
+                      <button
+                        key={profile}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDemoProfile(profile);
+                          setDemoNotice(null);
+                        }}
+                        disabled={applyDemoProfileMutation.isPending}
+                        className={[
+                          "rounded-full px-3 py-1.5 text-xs font-medium transition",
+                          isSelected
+                            ? "border border-[var(--primary-border)] bg-[var(--primary-soft)] text-foreground"
+                            : "border border-transparent text-muted-foreground hover:text-foreground",
+                        ].join(" ")}
+                      >
+                        {profile}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDemoNotice(null);
+                    void applyDemoProfileMutation.mutateAsync(effectiveSelectedProfile);
+                  }}
+                  disabled={
+                    applyDemoProfileMutation.isPending ||
+                    !effectiveSelectedProfile ||
+                    availableProfiles.length === 0
+                  }
+                >
+                  {applyDemoProfileMutation.isPending ? "Aplicando..." : "Aplicar perfil"}
+                </Button>
+
+                <span className="text-xs text-muted-foreground">
+                  actual: {demoProfileState?.currentProfile ?? "n/a"}
+                </span>
+
+                {availableProfiles.length === 0 ? (
+                  <span className="text-xs text-muted-foreground">
+                    El simulador no devolvio perfiles.
+                  </span>
+                ) : null}
+              </>
+            ) : demoProfileQuery.isError ? (
+              <span className="text-xs text-muted-foreground">
+                No se pudo conectar con el simulador demo. Revisa `DEMO_CONTROL_BASE_URL`.
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                Activalo con <code>DEMO_CONTROL_ENABLED=true</code> y reinicia la app.
+              </span>
+            )}
+          </div>
+
           {queuesQuery.isError ? (
             <span className="text-xs text-[var(--critical)]">{queuesQuery.error.message}</span>
           ) : null}
           {!queuesQuery.isError && brokerMetricsQuery.isError ? (
             <span className="text-xs text-[var(--critical)]">{brokerMetricsQuery.error.message}</span>
+          ) : null}
+          {demoProfileQuery.isError ? (
+            <span className="text-xs text-[var(--critical)]">
+              Error en modo demo: {demoProfileQuery.error.message}
+            </span>
+          ) : null}
+          {demoNotice ? (
+            <span className="text-xs text-muted-foreground">{demoNotice}</span>
           ) : null}
         </CardHeader>
       </Card>
@@ -264,7 +496,7 @@ function QueueDashboardContent({
                 {queuesToReview.map((queue) => (
                   <div
                     key={queue.name}
-                    className="app-panel-soft flex min-h-36 flex-col justify-between gap-4 p-4"
+                    className="app-panel-soft flex flex-col gap-3 p-3"
                   >
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -278,7 +510,7 @@ function QueueDashboardContent({
                         <QueueHealthBadge status={queue.status} />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <p className="text-muted-foreground">Mensajes</p>
                           <p className="font-medium text-foreground">{queue.messageCount}</p>
@@ -290,9 +522,9 @@ function QueueDashboardContent({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3">
+                    <div className="mt-1 flex items-center justify-end gap-3 border-t border-[color:var(--border)] pt-2">
                       <a
-                        href="/explorer"
+                        href={`/explorer?queue=${encodeURIComponent(queue.name)}`}
                         className="text-xs font-medium text-muted-foreground transition hover:text-primary"
                       >
                         Abrir en Explorer

@@ -1,0 +1,62 @@
+services:
+  artemis:
+    image: vromero/activemq-artemis:2.41.0-alpine
+    container_name: artemis-pulse-artemis
+    environment:
+      ARTEMIS_USERNAME: admin
+      ARTEMIS_PASSWORD: admin123
+      DISABLE_SECURITY: "false"
+    ports:
+      - "8161:8161"
+      - "61616:61616"
+      - "5672:5672"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -q -O- http://localhost:8161 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  demo-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    container_name: artemis-pulse-demo-simulator
+    environment:
+      ARTEMIS_BASE_URL: http://artemis:8161/console/jolokia
+      ARTEMIS_USERNAME: admin
+      ARTEMIS_PASSWORD: admin123
+      DEMO_SIMULATOR_PORT: 7071
+      DEMO_AUTO_PROFILE: steady
+    depends_on:
+      artemis:
+        condition: service_healthy
+    ports:
+      - "7071:7071"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: artemis-pulse-app
+    environment:
+      ARTEMIS_BASE_URL: http://artemis:8161/console/jolokia
+      ARTEMIS_USERNAME: admin
+      ARTEMIS_PASSWORD: admin123
+      POLL_INTERVAL_MS: 3000
+      DEMO_CONTROL_ENABLED: "true"
+      DEMO_CONTROL_BASE_URL: http://demo-simulator:7071
+      DEMO_GUARD_ENABLED: "true"
+      DEMO_RATE_LIMIT_WINDOW_MS: 60000
+      DEMO_RATE_LIMIT_MAX_WRITES: 20
+      DEMO_AUTO_RESET_ENABLED: "true"
+      DEMO_AUTO_RESET_INTERVAL_MS: 600000
+      DEMO_AUTO_RESET_PROFILE: steady
+      HOST: 0.0.0.0
+      PORT: 4321
+    depends_on:
+      artemis:
+        condition: service_healthy
+      demo-simulator:
+        condition: service_started
+    ports:
+      - "4321:4321"

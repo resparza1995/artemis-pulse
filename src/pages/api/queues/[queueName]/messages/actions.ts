@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { executeQueueMessageAction } from "../../../../../lib/artemis";
+import { DemoGuardError, enforceDemoPolicy } from "../../../../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../../../../lib/jolokia";
 import type { MessageActionType } from "../../../../../types/explorer";
 
@@ -69,8 +70,19 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
 
   try {
+    const decodedQueueName = decodeURIComponent(queueName);
+
+    enforceDemoPolicy({
+      request,
+      action: "message-action",
+      resources: [
+        decodedQueueName,
+        payload.action === "move" ? payload.destinationQueueName ?? "" : "",
+      ],
+    });
+
     const result = await executeQueueMessageAction({
-      queueName: decodeURIComponent(queueName),
+      queueName: decodedQueueName,
       action: payload.action,
       messageIds: Array.isArray(payload.messageIds) ? payload.messageIds : [],
       destinationQueueName: payload.destinationQueueName,
@@ -84,7 +96,11 @@ export const POST: APIRoute = async ({ params, request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
+    const status = error instanceof DemoGuardError
+      ? error.statusCode
+      : error instanceof JolokiaRequestError
+        ? error.statusCode
+        : 502;
     const message =
       error instanceof Error
         ? error.message

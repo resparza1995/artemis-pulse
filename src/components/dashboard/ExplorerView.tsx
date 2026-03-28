@@ -346,6 +346,31 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const selectedQueue = queues.find((queue) => queue.name === selectedQueueName);
 
   useEffect(() => {
+    function syncQueueFromUrl() {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const queueFromUrl = new URLSearchParams(window.location.search).get("queue");
+      if (!queueFromUrl) {
+        return;
+      }
+
+      setSelectedQueueName(queueFromUrl);
+      setSearch("");
+    }
+
+    syncQueueFromUrl();
+    window.addEventListener("popstate", syncQueueFromUrl);
+    document.addEventListener("astro:after-swap", syncQueueFromUrl as EventListener);
+
+    return () => {
+      window.removeEventListener("popstate", syncQueueFromUrl);
+      document.removeEventListener("astro:after-swap", syncQueueFromUrl as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
     setExpandedAddresses((current) => {
       let changed = false;
       const next = { ...current };
@@ -363,6 +388,26 @@ function ExplorerViewContent(_: ExplorerViewProps) {
 
   useEffect(() => {
     setSelectedQueueName((current) => {
+      if (visibleQueues.length === 0) {
+        return current;
+      }
+
+      const queueFromUrl =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("queue") ?? ""
+          : "";
+
+      if (
+        queueFromUrl &&
+        visibleQueues.some(
+          (queue) => queue.name.toLowerCase() === queueFromUrl.toLowerCase(),
+        )
+      ) {
+        return visibleQueues.find(
+          (queue) => queue.name.toLowerCase() === queueFromUrl.toLowerCase(),
+        )?.name ?? queueFromUrl;
+      }
+
       if (visibleQueues.some((queue) => queue.name === current)) {
         return current;
       }

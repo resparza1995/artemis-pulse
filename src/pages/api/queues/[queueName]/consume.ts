@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { consumeMessages } from "../../../../lib/artemis";
+import { DemoGuardError, enforceDemoPolicy } from "../../../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../../../lib/jolokia";
 
 type ConsumePayload = {
@@ -34,8 +35,16 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
 
   try {
+    const decodedQueueName = decodeURIComponent(queueName);
+
+    enforceDemoPolicy({
+      request,
+      action: "consume",
+      resources: [decodedQueueName],
+    });
+
     const result = await consumeMessages({
-      queueName: decodeURIComponent(queueName),
+      queueName: decodedQueueName,
       count: payload.count ?? 1,
     });
 
@@ -47,7 +56,11 @@ export const POST: APIRoute = async ({ params, request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
+    const status = error instanceof DemoGuardError
+      ? error.statusCode
+      : error instanceof JolokiaRequestError
+        ? error.statusCode
+        : 502;
     const message =
       error instanceof Error
         ? error.message
