@@ -1,118 +1,47 @@
-﻿# Artemis Pulse
+# Artemis Pulse
 
-Artemis Pulse es una consola web para operar e inspeccionar brokers de ActiveMQ Artemis desde una interfaz construida con Astro, React y Tailwind CSS.
+Artemis Pulse es una consola web moderna para operar e inspeccionar brokers de ActiveMQ Artemis desde una interfaz construida con Astro, React y Tailwind CSS.
 
-La app esta orientada a tres vistas:
+La app esta orientada a tres vistas principales:
+- **Pulse**: resumen operativo y cambio de perfil demo
+- **Explorer**: trabajo diario sobre vinculaciones (addresses), colas (queues) y mensajes
+- **Topology**: mapa de red visual del broker
 
-- `Pulse`: resumen operativo y cambio de perfil demo
-- `Explorer`: trabajo diario sobre addresses, queues y mensajes
-- `Topology`: mapa visual del broker
-
-## Stack
-
-- Astro 6
-- React 19
-- Tailwind CSS 4
-- TanStack Query
-- Bun
-- Jolokia
-- React Flow
+---
 
 ## Arranque local
 
-1. Instala dependencias:
-
+1. Instala dependencias con [Bun](https://bun.sh/):
 ```bash
 bun install
 ```
 
-2. Crea `.env` a partir de `.env.example`.
+2. Configura tu entorno:
+```bash
+cp .env.example .env
+```
 
-3. Arranca la app:
-
+3. Inicia el servidor de desarrollo:
 ```bash
 bun run dev
 ```
 
-4. Abre:
+La app estara disponible en `http://localhost:4321`.
 
-```text
-http://localhost:4321
-```
+---
 
-## Modo demo
+## Documentacion y Guias
 
-La app incluye un simulador para generar trafico y cambiar escenarios desde `Pulse`.
+Para mantener este README ligero, la informacion detallada se encuentra segmentada en la carpeta `docs/`. **Es altamente recomendable consultarla**.
 
-Documentacion completa:
-- `docs/demo-mode.md`
+- 📖 **[Funcionalidades de la App](docs/funcionalidades.md)**: Que operaciones estan soportadas, y flujos de trabajo recomendados.
+- 🏗️ **[Arquitectura](docs/arquitectura.md)**: Estructura de carpetas, reglas de desarrollo, separation of concerns y flujos de informacion.
+- 🚀 **[Modo Demo y Simulador](docs/demo-mode.md)**: Instrucciones detalladas para usar el cluster en modo demostracion via Docker Compose o arrancar el simulador (generador de trafico sintactico) en local con comandos PowerShell/Bash.
 
-### Opcion 1. Demo completa con Docker
+---
 
-```bash
-docker compose up --build
-```
+## Scripts Utiles
 
-Servicios levantados:
-- App: `http://localhost:4321`
-- Artemis: `http://localhost:8161`
-- Demo simulator: `http://localhost:7071`
-
-### Opcion 2. Demo local sin Docker
-
-Necesitas tres procesos:
-
-1. Artemis levantado y accesible en `http://localhost:8161/console/jolokia`
-2. Simulador demo
-3. App Artemis Pulse
-
-#### Arrancar el simulador
-
-PowerShell:
-
-```powershell
-$env:ARTEMIS_BASE_URL="http://localhost:8161/console/jolokia"
-$env:ARTEMIS_USERNAME="admin"
-$env:ARTEMIS_PASSWORD="admin"
-$env:DEMO_SIMULATOR_PORT="7071"
-$env:DEMO_AUTO_PROFILE="steady"
-bun run demo:simulator
-```
-
-#### Arrancar la app en modo demo
-
-PowerShell:
-
-```powershell
-$env:ARTEMIS_BASE_URL="http://localhost:8161/console/jolokia"
-$env:ARTEMIS_USERNAME="admin"
-$env:ARTEMIS_PASSWORD="admin"
-$env:DEMO_CONTROL_ENABLED="true"
-$env:DEMO_CONTROL_BASE_URL="http://localhost:7071"
-$env:DEMO_GUARD_ENABLED="true"
-$env:DEMO_RATE_LIMIT_WINDOW_MS="60000"
-$env:DEMO_RATE_LIMIT_MAX_WRITES="20"
-$env:DEMO_AUTO_RESET_ENABLED="true"
-$env:DEMO_AUTO_RESET_INTERVAL_MS="600000"
-$env:DEMO_AUTO_RESET_PROFILE="steady"
-bun run dev
-```
-
-### Perfiles demo
-
-- `steady`: trafico equilibrado
-- `incident`: backlog y tension operativa
-- `recovery`: drenado y vuelta a estado saludable
-
-## Documentacion
-
-- `docs/funcionalidades.md`
-- `docs/arquitectura.md`
-- `docs/demo-mode.md`
-
-## Scripts utiles
-
-- `bun run dev`
-- `bun run check`
-- `bun run test`
-- `bun run demo:simulator`
+- `bun run dev`: entorno de desarrollo local.
+- `bun run check`: verifica todo el tipado (TypeScript) usando Astro.
+- `bun run demo:simulator`: arranca el simulador de trafico local (`docs/demo-mode.md`).
