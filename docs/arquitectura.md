@@ -2,8 +2,6 @@
 
 ## Objetivo
 
-Este documento describe la arquitectura real del proyecto a dia de hoy:
-
 - como esta organizada la app
 - como se conectan UI, backend y Artemis
 - donde vive cada responsabilidad
