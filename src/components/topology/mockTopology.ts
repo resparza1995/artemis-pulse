@@ -1,0 +1,166 @@
+import type { TopologyGraph } from "./topology-types";
+
+export const mockTopology: TopologyGraph = {
+  nodes: [
+    {
+      id: "broker-main",
+      type: "broker",
+      label: "artemis-main",
+      status: "healthy",
+      position: { x: 520, y: 40 },
+      meta: {
+        description: "Broker principal del entorno.",
+      },
+    },
+    {
+      id: "address-orders",
+      type: "address",
+      label: "orders.events",
+      status: "healthy",
+      position: { x: 120, y: 220 },
+      meta: {
+        parentId: "broker-main",
+        routingType: "ANYCAST",
+      },
+    },
+    {
+      id: "address-billing",
+      type: "address",
+      label: "billing.events",
+      status: "warning",
+      position: { x: 520, y: 220 },
+      meta: {
+        parentId: "broker-main",
+        routingType: "MULTICAST",
+      },
+    },
+    {
+      id: "address-notify",
+      type: "address",
+      label: "notify.events",
+      status: "healthy",
+      position: { x: 920, y: 220 },
+      meta: {
+        parentId: "broker-main",
+        routingType: "MULTICAST",
+      },
+    },
+    {
+      id: "queue-orders-processor",
+      type: "queue",
+      label: "q.orders.processor",
+      status: "healthy",
+      position: { x: 40, y: 400 },
+      meta: {
+        parentId: "address-orders",
+        backlog: 42,
+        consumerCount: 1,
+      },
+    },
+    {
+      id: "queue-orders-audit",
+      type: "queue",
+      label: "q.orders.audit",
+      status: "warning",
+      position: { x: 270, y: 400 },
+      meta: {
+        parentId: "address-orders",
+        backlog: 1800,
+        consumerCount: 0,
+      },
+    },
+    {
+      id: "queue-billing-main",
+      type: "queue",
+      label: "q.billing.main",
+      status: "healthy",
+      position: { x: 460, y: 400 },
+      meta: {
+        parentId: "address-billing",
+        backlog: 74,
+        consumerCount: 1,
+      },
+    },
+    {
+      id: "queue-billing-dlq",
+      type: "queue",
+      label: "q.billing.dlq",
+      status: "critical",
+      position: { x: 690, y: 400 },
+      meta: {
+        parentId: "address-billing",
+        backlog: 538,
+        consumerCount: 0,
+        isDlq: true,
+      },
+    },
+    {
+      id: "queue-notify-email",
+      type: "queue",
+      label: "q.notify.email",
+      status: "healthy",
+      position: { x: 860, y: 400 },
+      meta: {
+        parentId: "address-notify",
+        backlog: 16,
+        consumerCount: 1,
+      },
+    },
+    {
+      id: "queue-notify-push",
+      type: "queue",
+      label: "q.notify.push",
+      status: "inactive",
+      position: { x: 1090, y: 400 },
+      meta: {
+        parentId: "address-notify",
+        backlog: 0,
+        consumerCount: 0,
+      },
+    },
+    {
+      id: "consumer-orders",
+      type: "consumer",
+      label: "cons.orders.v1",
+      status: "healthy",
+      position: { x: 60, y: 580 },
+      meta: {
+        parentId: "queue-orders-processor",
+      },
+    },
+    {
+      id: "consumer-billing",
+      type: "consumer",
+      label: "cons.billing.v2",
+      status: "healthy",
+      position: { x: 470, y: 580 },
+      meta: {
+        parentId: "queue-billing-main",
+      },
+    },
+    {
+      id: "consumer-notify",
+      type: "consumer",
+      label: "cons.notify.push",
+      status: "inactive",
+      position: { x: 1110, y: 580 },
+      meta: {
+        parentId: "queue-notify-push",
+      },
+    },
+  ],
+  edges: [
+    { id: "e-broker-orders", source: "broker-main", target: "address-orders" },
+    { id: "e-broker-billing", source: "broker-main", target: "address-billing" },
+    { id: "e-broker-notify", source: "broker-main", target: "address-notify" },
+    { id: "e-orders-processor", source: "address-orders", target: "queue-orders-processor" },
+    { id: "e-orders-audit", source: "address-orders", target: "queue-orders-audit" },
+    { id: "e-billing-main", source: "address-billing", target: "queue-billing-main" },
+    { id: "e-billing-dlq", source: "address-billing", target: "queue-billing-dlq", label: "DLQ" },
+    { id: "e-notify-email", source: "address-notify", target: "queue-notify-email" },
+    { id: "e-notify-push", source: "address-notify", target: "queue-notify-push" },
+    { id: "e-cons-orders", source: "queue-orders-processor", target: "consumer-orders" },
+    { id: "e-cons-billing", source: "queue-billing-main", target: "consumer-billing" },
+    { id: "e-cons-notify", source: "queue-notify-push", target: "consumer-notify" },
+  ],
+};

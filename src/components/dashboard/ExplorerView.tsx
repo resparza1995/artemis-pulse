@@ -298,6 +298,10 @@ function buildMessageActionNotice(result: QueueMessageActionResponse): Operation
 }
 
 function ExplorerViewContent(_: ExplorerViewProps) {
+  const initialQueueFromUrl =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("queue") ?? ""
+      : "";
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [messageFilter, setMessageFilter] = useState("");
@@ -305,7 +309,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const [messageSortKey, setMessageSortKey] = useState<MessageSortKey>("timestamp");
   const [messageSortDirection, setMessageSortDirection] = useState<MessageSortDirection>("desc");
   const [expandedAddresses, setExpandedAddresses] = useState<Record<string, boolean>>({});
-  const [selectedQueueName, setSelectedQueueName] = useState("");
+  const [selectedQueueName, setSelectedQueueName] = useState(initialQueueFromUrl);
   const [selectedMessageId, setSelectedMessageId] = useState("");
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [isAdminOpen, setIsAdminOpen] = useState(false);

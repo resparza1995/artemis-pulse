@@ -1,0 +1,17 @@
+---
+import TopologyView from "../components/topology/TopologyView";
+import MainLayout from "../layouts/MainLayout.astro";
+import { getBrokerLabel, getServerConfig } from "../lib/config";
+
+const { pollIntervalMs } = getServerConfig();
+const brokerLabel = getBrokerLabel();
+---
+
+<MainLayout
+  title="Topology | Artemis Pulse"
+  pageTitle="Topology"
+  pageDescription="Mapa visual de relaciones broker, addresses, queues y consumers."
+  brokerLabel={brokerLabel}
+>
+  <TopologyView client:load pollIntervalMs={pollIntervalMs} />
+</MainLayout>

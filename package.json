@@ -9,18 +9,21 @@
     "start": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
     "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
-    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check"
+    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "test": "bun test"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.3",
     "@astrojs/react": "^5.0.1",
     "@tanstack/react-query": "^5.91.3",
+    "@tanstack/react-virtual": "^3.13.23",
     "astro": "^6.0.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "reactflow": "^11.11.4",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
@@ -28,8 +31,8 @@
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "bun-types": "^1.3.11",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"
   }
 }
-

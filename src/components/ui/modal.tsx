@@ -28,8 +28,8 @@ export function Modal({
   const [isVisible, setIsVisible] = React.useState(false);
 
   React.useEffect(() => {
-    let enterTimer: ReturnType<typeof setTimeout> | undefined;
-    let exitTimer: ReturnType<typeof setTimeout> | undefined;
+    let enterTimer: number | undefined;
+    let exitTimer: number | undefined;
 
     if (open) {
       setIsMounted(true);
