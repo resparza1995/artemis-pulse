@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { executeQueueMessageAction } from "../../../../../lib/artemis";
 import { DemoGuardError, enforceDemoPolicy } from "../../../../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../../../../lib/jolokia";
-import type { MessageActionType } from "../../../../../types/explorer";
+import type { MessageActionType } from "../../../../../features/explorer/types";
 
 type QueueMessageActionPayload = {
   action?: MessageActionType;

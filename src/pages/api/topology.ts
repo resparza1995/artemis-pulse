@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { listQueues } from "../../lib/artemis";
 import { buildTopologyGraph } from "../../lib/topology";
-import type { TopologyResponse } from "../../types/topology";
+import type { TopologyResponse } from "../../features/topology/types";
 
 export const GET: APIRoute = async () => {
   try {

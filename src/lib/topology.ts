@@ -1,7 +1,7 @@
 import { getBrokerLabel } from "./config";
 import { getQueueStatus, getQueueStatusThresholds, type QueueStatusThresholds } from "./queue-status";
 import type { QueueSummary } from "../types/queues";
-import type { TopologyEdge, TopologyGraph, TopologyNode, TopologyNodeStatus } from "../types/topology";
+import type { TopologyEdge, TopologyGraph, TopologyNode, TopologyNodeStatus } from "../features/topology/types";
 
 export type TopologyThresholds = QueueStatusThresholds;
 
