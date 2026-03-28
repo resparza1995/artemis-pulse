@@ -13,23 +13,6 @@ Accede [aquí](http://vps22550.cubepath.net:4321/) para probar la app.
 Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento real.  
 🚀 [Detalle del Modo Demo](docs/demo-mode.md)
 
-### ¿Cómo se ha desplegado?
-Para gestionar todo el proceso de despliegue se ha utilizado [CubePath](https://cubepath.com/).
-
-Se ha creado una máquina virtual para alojar el servicio de Dokploy.  
-Dentro de Dokploy, se ha configurado un nuevo proyecto:
-- Se ha añadido un servicio de tipo Compose, ya que toda la infraestructura está definida mediante un archivo docker-compose.yml y sus correspondientes Dockerfile.
-
-Se ha vinculado este repositorio de GitHub con Dokploy, indicando:
-- La ruta al archivo docker-compose.yml
-- La rama del repositorio para desplegar   
-
-Finalmente, se ha habilitado la opción de auto-deploy, de modo que el despliegue se ejecuta automáticamente cada vez que se realiza un push a la rama configurada.
-
-Con estos pasos, el despliegue queda completamente operativo.
-
-<img width="1552" height="471" alt="dokploy" src="https://github.com/user-attachments/assets/3bdf2aca-825d-408c-800b-8f49113ce8a5" />
-
 ---
 
 ## Resumen de funcionalidades
