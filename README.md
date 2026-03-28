@@ -7,6 +7,15 @@ La app esta orientada a tres vistas principales:
 - **Explorer**: trabajo diario sobre vinculaciones (addresses), colas (queues) y mensajes
 - **Topology**: mapa de red visual del broker
 
+## Despliegue en dockploy
+
+Accede [aquí](http://vps22550.cubepath.net:4321/) para probar la app.  
+Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento real.  
+
+🚀 [Detalle del Modo Demo](docs/demo-mode.md)
+
+---
+
 ## Resumen de funcionalidades
 
 - **Explorador en tiempo real**: Inspección de colas, addresses, contadores (consumers, mensajes) y payloads visualizados estructuradamente.
@@ -18,15 +27,7 @@ La app esta orientada a tres vistas principales:
   - *Move* / *Move All*: Volcar mensajes problemáticos a colas de tratamiento secundario.
 - **Panel de Topología**: Mapa visual interactivo mostrando las relaciones, salud y enrutamiento del broker entero.
 
-📖 **[Ver detalle completo de funcionalidades](docs/funcionalidades.md)**: Flujos recomendados y reglas de negocio soportadas por Artemis Pulse.
-
-
-## Despliegue en dockploy
-
-Accede [aquí](http://vps22550.cubepath.net:4321/) para probar la app.
-Hay un pequeño servicio simulando movientos en el broker de artemis para poder ver el funcionamiento real.
-
-🚀 **[Detalle del Modo Demo](docs/demo-mode.md)**
+📖 [Ver detalle completo de funcionalidades](docs/funcionalidades.md)
 
 ---
 
