@@ -3,16 +3,17 @@ import { JolokiaRequestError } from "../../../../../lib/jolokia";
 import { listQueueMessages } from "../../../../../lib/artemis";
 
 const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 100;
+const SUPPORTED_LIMITS = new Set([100, 250, 500]);
 
 function parseLimit(value: string | null) {
   const parsed = Number(value ?? DEFAULT_LIMIT);
 
-  if (!Number.isFinite(parsed) || parsed <= 0) {
+  if (!Number.isFinite(parsed)) {
     return DEFAULT_LIMIT;
   }
 
-  return Math.min(Math.floor(parsed), MAX_LIMIT);
+  const normalized = Math.floor(parsed);
+  return SUPPORTED_LIMITS.has(normalized) ? normalized : DEFAULT_LIMIT;
 }
 
 export const GET: APIRoute = async ({ params, url }) => {

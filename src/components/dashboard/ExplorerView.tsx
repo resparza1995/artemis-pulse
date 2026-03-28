@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   startTransition,
   useDeferredValue,
@@ -15,25 +15,28 @@ import {
 } from "react";
 import type {
   AddressDeleteResponse,
-  ExplorerMessageDetail,
+  ExplorerMessageDetail,  MessageActionType,
   PublishMessageResponse,
   QueueConsumeResponse,
   QueueDeleteResponse,
+  QueueMessageActionResponse,
   QueueMessagesResponse,
   QueuePurgeResponse,
 } from "../../types/explorer";
 import type { QueueSummary } from "../../types/queues";
-import { Button } from "../ui/button";
 import { ConsumeMessagesModal } from "./ConsumeMessagesModal";
 import { CreateAddressModal } from "./CreateAddressModal";
 import { CreateQueueModal } from "./CreateQueueModal";
 import { DeleteAddressModal } from "./DeleteAddressModal";
 import { DeleteQueueModal } from "./DeleteQueueModal";
+import { ExplorerAdminModal } from "./ExplorerAdminModal";
 import { ExplorerMessageDetailPanel } from "./ExplorerMessageDetailPanel";
 import { ExplorerMessagesPanel } from "./ExplorerMessagesPanel";
 import { ExplorerSidebar } from "./ExplorerSidebar";
+import { MoveMessagesModal } from "./MoveMessagesModal";
 import { PublishMessageModal } from "./PublishMessageModal";
 import { PurgeQueueModal } from "./PurgeQueueModal";
+import { RetryMessagesModal } from "./RetryMessagesModal";
 
 type ExplorerViewProps = {
   brokerLabel: string;
@@ -47,6 +50,16 @@ type QueueGroup = {
   address: string;
   queues: QueueSummary[];
 };
+
+type NoticeTone = "success" | "warning";
+
+type OperationNotice = {
+  tone: NoticeTone;
+  message: string;
+};
+
+type MessageSortKey = "timestamp" | "priority" | "size";
+type MessageSortDirection = "asc" | "desc";
 
 type CreateAddressPayload = {
   address: string;
@@ -65,6 +78,12 @@ type PublishPayload = {
   durable: boolean;
   headers: Record<string, string>;
   count: number;
+};
+
+type QueueMessageActionPayload = {
+  action: MessageActionType;
+  messageIds: string[];
+  destinationQueueName?: string;
 };
 
 async function parseResponse<T>(response: Response) {
@@ -100,9 +119,9 @@ async function fetchQueues() {
   return payload;
 }
 
-async function fetchQueueMessages(queueName: string) {
+async function fetchQueueMessages(queueName: string, limit: 100 | 250 | 500) {
   const response = await fetch(
-    `/api/queues/${encodeURIComponent(queueName)}/messages?limit=100`,
+    `/api/queues/${encodeURIComponent(queueName)}/messages?limit=${limit}`,
     {
       headers: { Accept: "application/json" },
     },
@@ -201,6 +220,19 @@ async function deleteAddressRequest(address: string) {
   return parseResponse<AddressDeleteResponse>(response);
 }
 
+async function executeMessageActionRequest(queueName: string, payload: QueueMessageActionPayload) {
+  const response = await fetch(`/api/queues/${encodeURIComponent(queueName)}/messages/actions`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseResponse<QueueMessageActionResponse>(response);
+}
+
 function groupQueues(queues: QueueSummary[], search: string) {
   const query = search.trim().toLowerCase();
   const groups = new Map<string, QueueSummary[]>();
@@ -229,12 +261,51 @@ function groupQueues(queues: QueueSummary[], search: string) {
     })) satisfies QueueGroup[];
 }
 
-function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
+function compareNullableNumbers(left: number | null, right: number | null, direction: MessageSortDirection) {
+  const leftValue = left ?? -1;
+  const rightValue = right ?? -1;
+  return direction === "asc" ? leftValue - rightValue : rightValue - leftValue;
+}
+
+function compareNullableTimestamps(left: string | null, right: string | null, direction: MessageSortDirection) {
+  const leftValue = left ? new Date(left).getTime() : -1;
+  const rightValue = right ? new Date(right).getTime() : -1;
+  return direction === "asc" ? leftValue - rightValue : rightValue - leftValue;
+}
+
+function buildMessageActionNotice(result: QueueMessageActionResponse): OperationNotice {
+  if (result.failed.length === 0) {
+    return {
+      tone: "success",
+      message: `${result.action === "retry" ? "Retry" : "Move"}: ${result.succeededCount} mensaje(s) procesados en ${result.queueName}.`,
+    };
+  }
+
+  if (result.succeededCount > 0) {
+    return {
+      tone: "warning",
+      message: `${result.action === "retry" ? "Retry" : "Move"}: ${result.succeededCount} mensaje(s) procesados y ${result.failed.length} fallaron en ${result.queueName}.`,
+    };
+  }
+
+  return {
+    tone: "warning",
+    message: `${result.action === "retry" ? "Retry" : "Move"}: no se proceso ningun mensaje. ${result.failed.length} fallaron.`,
+  };
+}
+
+function ExplorerViewContent(_: ExplorerViewProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [messageFilter, setMessageFilter] = useState("");
+  const [messageLimit, setMessageLimit] = useState<100 | 250 | 500>(100);
+  const [messageSortKey, setMessageSortKey] = useState<MessageSortKey>("timestamp");
+  const [messageSortDirection, setMessageSortDirection] = useState<MessageSortDirection>("desc");
   const [expandedAddresses, setExpandedAddresses] = useState<Record<string, boolean>>({});
   const [selectedQueueName, setSelectedQueueName] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState("");
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isCreateAddressOpen, setIsCreateAddressOpen] = useState(false);
   const [isCreateQueueOpen, setIsCreateQueueOpen] = useState(false);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
@@ -242,8 +313,11 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
   const [isPurgeOpen, setIsPurgeOpen] = useState(false);
   const [isDeleteQueueOpen, setIsDeleteQueueOpen] = useState(false);
   const [isDeleteAddressOpen, setIsDeleteAddressOpen] = useState(false);
-  const [operationNotice, setOperationNotice] = useState<string | null>(null);
+  const [isRetryOpen, setIsRetryOpen] = useState(false);
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
+  const [operationNotice, setOperationNotice] = useState<OperationNotice | null>(null);
   const deferredSearch = useDeferredValue(search);
+  const deferredMessageFilter = useDeferredValue(messageFilter);
 
   const queuesQuery = useQuery({
     queryKey: ["queues"],
@@ -289,25 +363,64 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     });
   }, [visibleQueues]);
 
+  useEffect(() => {
+    setSelectedMessageIds([]);
+    setSelectedMessageId("");
+    setMessageFilter("");
+  }, [selectedQueueName]);
+
   const messagesQuery = useQuery({
-    queryKey: ["queue-messages", selectedQueueName, 100],
-    queryFn: () => fetchQueueMessages(selectedQueueName),
+    queryKey: ["queue-messages", selectedQueueName, messageLimit],
+    queryFn: () => fetchQueueMessages(selectedQueueName, messageLimit),
     enabled: Boolean(selectedQueueName),
     retry: 1,
     refetchOnWindowFocus: false,
   });
 
-  useEffect(() => {
+  const filteredMessages = useMemo(() => {
     const items = messagesQuery.data?.items ?? [];
+    const query = deferredMessageFilter.trim().toLowerCase();
 
+    const filtered = items.filter((message) => {
+      if (!query) {
+        return true;
+      }
+
+      return (
+        message.messageId.toLowerCase().includes(query) ||
+        (message.contentType ?? "").toLowerCase().includes(query) ||
+        (message.preview ?? "").toLowerCase().includes(query)
+      );
+    });
+
+    return [...filtered].sort((left, right) => {
+      switch (messageSortKey) {
+        case "priority":
+          return compareNullableNumbers(left.priority, right.priority, messageSortDirection);
+        case "size":
+          return compareNullableNumbers(left.size, right.size, messageSortDirection);
+        case "timestamp":
+        default:
+          return compareNullableTimestamps(left.timestamp, right.timestamp, messageSortDirection);
+      }
+    });
+  }, [messagesQuery.data?.items, deferredMessageFilter, messageSortKey, messageSortDirection]);
+
+  useEffect(() => {
+    setSelectedMessageIds((current) =>
+      current.filter((messageId) => filteredMessages.some((message) => message.messageId === messageId)),
+    );
+  }, [filteredMessages]);
+
+  useEffect(() => {
     setSelectedMessageId((current) => {
-      if (items.some((message) => message.messageId === current)) {
+      if (filteredMessages.some((message) => message.messageId === current)) {
         return current;
       }
 
-      return items[0]?.messageId ?? "";
+      return filteredMessages[0]?.messageId ?? "";
     });
-  }, [messagesQuery.data?.items, selectedQueueName]);
+  }, [filteredMessages]);
 
   const detailQuery = useQuery({
     queryKey: ["message-detail", selectedQueueName, selectedMessageId],
@@ -317,11 +430,20 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     refetchOnWindowFocus: false,
   });
 
+  const selectedMessages = useMemo(
+    () => filteredMessages.filter((message) => selectedMessageIds.includes(message.messageId)),
+    [filteredMessages, selectedMessageIds],
+  );
+  const canRetrySelection = selectedMessages.some((message) => message.canRetrySafely);
+
   const createAddressMutation = useMutation({
     mutationFn: createAddressRequest,
     onSuccess: async (result) => {
       setIsCreateAddressOpen(false);
-      setOperationNotice(`Address ${result.address} creada. Podras asociarle queues desde la UI.`);
+      setOperationNotice({
+        tone: "success",
+        message: `Address ${result.address} creada. Podras asociarle queues desde la UI.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -332,7 +454,10 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
       setIsCreateQueueOpen(false);
       setSearch("");
       setSelectedQueueName(queue.name);
-      setOperationNotice(`Queue ${queue.name} creada correctamente.`);
+      setOperationNotice({
+        tone: "success",
+        message: `Queue ${queue.name} creada correctamente.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -347,11 +472,12 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     },
     onSuccess: async (result) => {
       setIsPublishOpen(false);
-      setOperationNotice(
-        `Se publicaron ${result.sentCount} mensaje(s) en ${result.queueName}.`,
-      );
+      setOperationNotice({
+        tone: "success",
+        message: `Se publicaron ${result.sentCount} mensaje(s) en ${result.queueName}.`,
+      });
       await queryClient.invalidateQueries({
-        queryKey: ["queue-messages", result.queueName, 100],
+        queryKey: ["queue-messages", result.queueName, messageLimit],
       });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
@@ -368,10 +494,14 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     onSuccess: async (result) => {
       setIsPurgeOpen(false);
       setSelectedMessageId("");
-      setOperationNotice(`Se limpiaron ${result.removedCount} mensajes de ${result.queueName}.`);
+      setSelectedMessageIds([]);
+      setOperationNotice({
+        tone: "success",
+        message: `Se limpiaron ${result.removedCount} mensajes de ${result.queueName}.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
-        queryKey: ["queue-messages", result.queueName, 100],
+        queryKey: ["queue-messages", result.queueName, messageLimit],
       });
       await queryClient.invalidateQueries({
         queryKey: ["message-detail", result.queueName],
@@ -391,10 +521,67 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     onSuccess: async (result) => {
       setIsConsumeOpen(false);
       setSelectedMessageId("");
-      setOperationNotice(`Consumer temporal: ${result.consumedCount} mensaje(s) consumidos de ${result.queueName}.`);
+      setSelectedMessageIds([]);
+      setOperationNotice({
+        tone: "success",
+        message: `Consumer temporal: ${result.consumedCount} mensaje(s) consumidos de ${result.queueName}.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
-        queryKey: ["queue-messages", result.queueName, 100],
+        queryKey: ["queue-messages", result.queueName, messageLimit],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["message-detail", result.queueName],
+        exact: false,
+      });
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: () => {
+      if (!selectedQueueName) {
+        throw new Error("Selecciona primero una queue para reintentar mensajes.");
+      }
+
+      return executeMessageActionRequest(selectedQueueName, {
+        action: "retry",
+        messageIds: selectedMessageIds,
+      });
+    },
+    onSuccess: async (result) => {
+      setIsRetryOpen(false);
+      setSelectedMessageIds([]);
+      setOperationNotice(buildMessageActionNotice(result));
+      await queryClient.invalidateQueries({ queryKey: ["queues"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["queue-messages", result.queueName, messageLimit],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["message-detail", result.queueName],
+        exact: false,
+      });
+    },
+  });
+
+  const moveMutation = useMutation({
+    mutationFn: (destinationQueueName: string) => {
+      if (!selectedQueueName) {
+        throw new Error("Selecciona primero una queue para mover mensajes.");
+      }
+
+      return executeMessageActionRequest(selectedQueueName, {
+        action: "move",
+        messageIds: selectedMessageIds,
+        destinationQueueName,
+      });
+    },
+    onSuccess: async (result) => {
+      setIsMoveOpen(false);
+      setSelectedMessageIds([]);
+      setOperationNotice(buildMessageActionNotice(result));
+      await queryClient.invalidateQueries({ queryKey: ["queues"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["queue-messages", result.queueName, messageLimit],
       });
       await queryClient.invalidateQueries({
         queryKey: ["message-detail", result.queueName],
@@ -415,10 +602,14 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
       setIsDeleteQueueOpen(false);
       setSelectedQueueName("");
       setSelectedMessageId("");
-      setOperationNotice(`Queue ${result.queueName} eliminada.`);
+      setSelectedMessageIds([]);
+      setOperationNotice({
+        tone: "success",
+        message: `Queue ${result.queueName} eliminada.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
-        queryKey: ["queue-messages", result.queueName, 100],
+        queryKey: ["queue-messages", result.queueName, messageLimit],
       });
       await queryClient.invalidateQueries({
         queryKey: ["message-detail", result.queueName],
@@ -431,30 +622,67 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
     mutationFn: (address: string) => deleteAddressRequest(address),
     onSuccess: async (result) => {
       setIsDeleteAddressOpen(false);
-      setOperationNotice(`Address ${result.address} eliminada.`);
+      setOperationNotice({
+        tone: "success",
+        message: `Address ${result.address} eliminada.`,
+      });
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
 
-  async function handleRefresh() {
-    await queuesQuery.refetch();
+  function toggleMessageSelection(messageId: string) {
+    setSelectedMessageIds((current) =>
+      current.includes(messageId)
+        ? current.filter((item) => item !== messageId)
+        : [...current, messageId],
+    );
+  }
 
-    if (selectedQueueName) {
-      await messagesQuery.refetch();
-    }
+  function selectAllVisible() {
+    setSelectedMessageIds((current) => {
+      const visibleIds = filteredMessages.map((message) => message.messageId);
+      const allSelected = visibleIds.length > 0 && visibleIds.every((id) => current.includes(id));
 
-    if (selectedQueueName && selectedMessageId) {
-      await detailQuery.refetch();
-    }
+      if (allSelected) {
+        return current.filter((id) => !visibleIds.includes(id));
+      }
+
+      return [...new Set([...current, ...visibleIds])];
+    });
+  }
+
+
+  function openCreateAddressFromAdmin() {
+    setIsAdminOpen(false);
+    setIsCreateAddressOpen(true);
+  }
+
+  function openCreateQueueFromAdmin() {
+    setIsAdminOpen(false);
+    setIsCreateQueueOpen(true);
+  }
+
+  function openDeleteAddressFromAdmin() {
+    setIsAdminOpen(false);
+    setIsDeleteAddressOpen(true);
   }
 
   return (
     <>
       <div className="space-y-4">
         {operationNotice ? (
-          <div className="app-notice app-notice-success flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>{operationNotice}</span>
+          <div
+            className={[
+              "app-notice flex items-center gap-2 text-sm",
+              operationNotice.tone === "success" ? "app-notice-success" : "app-notice-warning",
+            ].join(" ")}
+          >
+            {operationNotice.tone === "success" ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            <span>{operationNotice.message}</span>
             <button
               type="button"
               className="ml-auto text-current opacity-80 transition hover:opacity-100"
@@ -486,16 +714,33 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
             isLoading={queuesQuery.isLoading}
             isError={queuesQuery.isError}
             errorMessage={queuesQuery.error?.message}
-            onOpenCreateAddress={() => setIsCreateAddressOpen(true)}
-            onOpenCreateQueue={() => setIsCreateQueueOpen(true)}
-            onOpenDeleteAddress={() => setIsDeleteAddressOpen(true)}
+            onOpenAdmin={() => setIsAdminOpen(true)}
           />
 
           <ExplorerMessagesPanel
             queue={selectedQueue}
             data={messagesQuery.data}
+            items={filteredMessages}
             selectedMessageId={selectedMessageId}
+            selectedMessageIds={selectedMessageIds}
+            messageLimit={messageLimit}
+            messageFilter={messageFilter}
+            messageSortKey={messageSortKey}
+            messageSortDirection={messageSortDirection}
+            onMessageLimitChange={setMessageLimit}
+            onMessageFilterChange={(value) => {
+              startTransition(() => {
+                setMessageFilter(value);
+              });
+            }}
+            onMessageSortKeyChange={setMessageSortKey}
+            onToggleSortDirection={() =>
+              setMessageSortDirection((current) => (current === "desc" ? "asc" : "desc"))
+            }
             onSelectMessage={setSelectedMessageId}
+            onToggleMessageSelection={toggleMessageSelection}
+            onSelectAllVisible={selectAllVisible}
+            onClearSelection={() => setSelectedMessageIds([])}
             isLoading={messagesQuery.isLoading}
             isFetching={messagesQuery.isFetching}
             isError={messagesQuery.isError}
@@ -505,6 +750,9 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
             onOpenConsume={() => setIsConsumeOpen(true)}
             onOpenPurge={() => setIsPurgeOpen(true)}
             onOpenDeleteQueue={() => setIsDeleteQueueOpen(true)}
+            onOpenRetry={() => setIsRetryOpen(true)}
+            onOpenMove={() => setIsMoveOpen(true)}
+            canRetrySelection={canRetrySelection}
           />
 
           <ExplorerMessageDetailPanel
@@ -519,6 +767,16 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
           />
         </section>
       </div>
+
+      <ExplorerAdminModal
+        open={isAdminOpen}
+        selectedAddress={selectedQueue?.address}
+        selectedQueueName={selectedQueue?.name}
+        onClose={() => setIsAdminOpen(false)}
+        onOpenCreateAddress={openCreateAddressFromAdmin}
+        onOpenCreateQueue={openCreateQueueFromAdmin}
+        onOpenDeleteAddress={openDeleteAddressFromAdmin}
+      />
 
       <CreateAddressModal
         open={isCreateAddressOpen}
@@ -631,6 +889,41 @@ function ExplorerViewContent({ brokerLabel }: ExplorerViewProps) {
         isPending={deleteAddressMutation.isPending}
         errorMessage={deleteAddressMutation.error?.message}
       />
+
+      <RetryMessagesModal
+        open={isRetryOpen}
+        queueName={selectedQueue?.name}
+        selectedMessages={selectedMessages}
+        onClose={() => {
+          if (!retryMutation.isPending) {
+            setIsRetryOpen(false);
+            retryMutation.reset();
+          }
+        }}
+        onConfirm={async () => {
+          await retryMutation.mutateAsync();
+        }}
+        isPending={retryMutation.isPending}
+        errorMessage={retryMutation.error?.message}
+      />
+
+      <MoveMessagesModal
+        open={isMoveOpen}
+        queueName={selectedQueue?.name}
+        selectedCount={selectedMessageIds.length}
+        queues={queues}
+        onClose={() => {
+          if (!moveMutation.isPending) {
+            setIsMoveOpen(false);
+            moveMutation.reset();
+          }
+        }}
+        onSubmit={async (destinationQueueName) => {
+          await moveMutation.mutateAsync(destinationQueueName);
+        }}
+        isPending={moveMutation.isPending}
+        errorMessage={moveMutation.error?.message}
+      />
     </>
   );
 }
@@ -654,3 +947,5 @@ export default function ExplorerView(props: ExplorerViewProps) {
     </QueryClientProvider>
   );
 }
+
+

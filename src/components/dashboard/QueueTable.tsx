@@ -1,4 +1,4 @@
-import type { QueueSummary } from "../../types/queues";
+﻿import type { QueueSummary } from "../../types/queues";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -30,7 +30,7 @@ export function QueueTable({
   onSelectQueue,
 }: QueueTableProps) {
   return (
-    <Card>
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="gap-2 border-b border-[color:var(--border)] pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -42,13 +42,13 @@ export function QueueTable({
           <Badge variant="neutral">{queues.length} visibles</Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-0">
         {queues.length === 0 ? (
-          <div className="flex min-h-64 items-center justify-center px-6 py-10 text-center text-sm text-muted-foreground">
+          <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-10 text-center text-sm text-muted-foreground">
             No hay colas que coincidan con los filtros actuales.
           </div>
         ) : (
-          <div className="app-table-shell overflow-x-auto rounded-none border-x-0 border-b-0 border-t-0">
+          <div className="app-table-shell min-h-0 flex-1 overflow-auto rounded-none border-x-0 border-b-0 border-t-0">
             <Table>
               <TableHeader>
                 <TableRow>

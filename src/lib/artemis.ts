@@ -2,9 +2,11 @@ import type {
   AddressDeleteResponse,
   ExplorerMessageDetail,
   ExplorerMessageSummary,
+  MessageActionType,
   PublishMessageResponse,
   QueueConsumeResponse,
   QueueDeleteResponse,
+  QueueMessageActionResponse,
   QueueMessagesResponse,
   QueuePurgeResponse,
 } from "../types/explorer";
@@ -52,6 +54,13 @@ type PublishMessageInput = {
   count?: number;
 };
 
+type QueueMessageActionInput = {
+  queueName: string;
+  action: MessageActionType;
+  messageIds: string[];
+  destinationQueueName?: string;
+};
+
 type JolokiaSearchResponse = JolokiaResponse<string[]>;
 type JolokiaReadResponse = JolokiaResponse<QueueAttributes>;
 type JolokiaExecResponse<TValue = string> = JolokiaResponse<TValue>;
@@ -65,6 +74,7 @@ const QUEUE_ATTRIBUTES = [
   "ScheduledCount",
 ] as const;
 const BROKER_MBEAN_PATTERN = 'org.apache.activemq.artemis:broker=*';
+const SUPPORTED_MESSAGE_LIMITS = new Set([100, 250, 500]);
 
 function extractObjectProperty(objectName: string, propertyName: string) {
   const pattern = new RegExp(`${propertyName}=(?:"([^"]*)"|([^,]+))`);
@@ -212,11 +222,52 @@ function createPreview(body: string | null) {
   return preview.length > 140 ? `${preview.slice(0, 137)}...` : preview;
 }
 
+function getOriginalMetadata(record: Record<string, unknown>) {
+  const stringProperties = getStringProperties(record);
+  const originalQueue =
+    getStringValue(record, [
+      "OriginalQueue",
+      "originalQueue",
+      "_AMQ_ORIG_QUEUE",
+      "HDR_ORIGINAL_QUEUE",
+      "JMSOriginalQueue",
+    ]) ??
+    getStringValue(stringProperties, [
+      "OriginalQueue",
+      "originalQueue",
+      "_AMQ_ORIG_QUEUE",
+      "HDR_ORIGINAL_QUEUE",
+      "JMSOriginalQueue",
+    ]);
+
+  const originalAddress =
+    getStringValue(record, [
+      "OriginalAddress",
+      "originalAddress",
+      "_AMQ_ORIG_ADDRESS",
+      "HDR_ORIGINAL_ADDRESS",
+      "JMSOriginalAddress",
+    ]) ??
+    getStringValue(stringProperties, [
+      "OriginalAddress",
+      "originalAddress",
+      "_AMQ_ORIG_ADDRESS",
+      "HDR_ORIGINAL_ADDRESS",
+      "JMSOriginalAddress",
+    ]);
+
+  return {
+    originalQueue,
+    originalAddress,
+    canRetrySafely: Boolean(originalQueue || originalAddress),
+  };
+}
+
 function splitMessageMetadata(record: Record<string, unknown>) {
   const headers = {
     ...Object.fromEntries(
       Object.entries(record).filter(([key]) =>
-        /^(JMS|AMQ|HDR_|_AMQ|_HQ|OriginalQueue|originalQueue)/i.test(key),
+        /^(JMS|AMQ|HDR_|_AMQ|_HQ|OriginalQueue|originalQueue|OriginalAddress|originalAddress)/i.test(key),
       ),
     ),
     ...getStringProperties(record),
@@ -268,6 +319,16 @@ function splitMessageMetadata(record: Record<string, unknown>) {
     "protocol",
     "persistentSize",
     "redelivered",
+    "OriginalQueue",
+    "originalQueue",
+    "OriginalAddress",
+    "originalAddress",
+    "_AMQ_ORIG_QUEUE",
+    "_AMQ_ORIG_ADDRESS",
+    "HDR_ORIGINAL_QUEUE",
+    "HDR_ORIGINAL_ADDRESS",
+    "JMSOriginalQueue",
+    "JMSOriginalAddress",
   ]);
 
   const properties = Object.fromEntries(
@@ -290,9 +351,15 @@ function normalizeMessageSummary(record: Record<string, unknown>) {
   }
 
   const body = normalizeMessageBody(record);
+  const brokerMessageId = getNumberValue(record, ["messageID", "messageId"]);
+  const originalMetadata = getOriginalMetadata(record);
 
   return {
     messageId,
+    brokerMessageId,
+    originalAddress: originalMetadata.originalAddress,
+    originalQueue: originalMetadata.originalQueue,
+    canRetrySafely: originalMetadata.canRetrySafely,
     timestamp: normalizeTimestamp(
       getStringValue(record, ["timestamp", "JMSTimestamp"]),
     ),
@@ -395,6 +462,17 @@ function clampCount(value: number | undefined, fallback = 1) {
   }
 
   return Math.max(1, Math.min(Math.floor(parsed), 100));
+}
+
+function normalizeMessageLimit(value: number | undefined, fallback = 100) {
+  const parsed = Number(value ?? fallback);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const normalized = Math.floor(parsed);
+  return SUPPORTED_MESSAGE_LIMITS.has(normalized) ? normalized : fallback;
 }
 
 async function searchQueueMBeans() {
@@ -540,6 +618,24 @@ async function readQueueMessagesAsJson(objectName: string) {
     : [];
 }
 
+async function executeBooleanQueueOperation(
+  objectName: string,
+  operation: string,
+  argumentsList: unknown[],
+  fallbackMessage: string,
+) {
+  const response = await jolokiaPost<JolokiaExecResponse<boolean>>({
+    type: "exec",
+    mbean: objectName,
+    operation,
+    arguments: argumentsList,
+  });
+
+  if (response.status !== 200 || !("value" in response) || response.value !== true) {
+    throw new JolokiaRequestError(getJolokiaErrorMessage(response, fallbackMessage));
+  }
+}
+
 export async function listQueues() {
   const objectNames = await searchQueueMBeans();
 
@@ -648,6 +744,7 @@ export async function getBrokerMetrics() {
 }
 
 export async function listQueueMessages(queueName: string, limit = 100) {
+  const normalizedLimit = normalizeMessageLimit(limit, 100);
   const [objectName, queues] = await Promise.all([
     getQueueObjectName(queueName),
     listQueues(),
@@ -667,14 +764,14 @@ export async function listQueueMessages(queueName: string, limit = 100) {
   const normalizedMessages = rawMessages
     .map((record) => normalizeMessageSummary(record))
     .filter((message): message is ExplorerMessageSummary => message !== null);
-  const cappedItems = normalizedMessages.slice(0, limit);
+  const cappedItems = normalizedMessages.slice(0, normalizedLimit);
 
   return {
     queueName: queue.name,
     address: queue.address,
     items: cappedItems,
-    limit,
-    truncated: normalizedMessages.length > limit,
+    limit: normalizedLimit,
+    truncated: normalizedMessages.length > normalizedLimit,
     totalKnownMessages: normalizedMessages.length,
     lastUpdatedAt: new Date().toISOString(),
   } satisfies QueueMessagesResponse;
@@ -847,18 +944,12 @@ function getNumericMessageId(record: Record<string, unknown>) {
 }
 
 async function removeMessageById(objectName: string, messageId: number) {
-  const response = await jolokiaPost<JolokiaExecResponse<boolean>>({
-    type: "exec",
-    mbean: objectName,
-    operation: "removeMessage(long)",
-    arguments: [messageId],
-  });
-
-  if (response.status !== 200 || !("value" in response) || response.value !== true) {
-    throw new JolokiaRequestError(
-      `No se pudo eliminar el mensaje ${messageId} de la cola.`,
-    );
-  }
+  await executeBooleanQueueOperation(
+    objectName,
+    "removeMessage(long)",
+    [messageId],
+    `No se pudo eliminar el mensaje ${messageId} de la cola.`,
+  );
 }
 
 export async function purgeQueue(queueName: string) {
@@ -990,4 +1081,106 @@ export async function consumeMessages(input: ConsumeMessagesInput) {
     items: consumableMessages.map((message) => message.detail),
     lastUpdatedAt: new Date().toISOString(),
   } satisfies QueueConsumeResponse;
+}
+
+export async function executeQueueMessageAction(input: QueueMessageActionInput) {
+  const queueName = input.queueName.trim();
+  const action = input.action;
+  const destinationQueueName = input.destinationQueueName?.trim();
+  const requestedMessageIds = [...new Set(input.messageIds.map((id) => id.trim()).filter(Boolean))];
+
+  if (!queueName) {
+    throw new JolokiaRequestError("Debes indicar la queue origen de la operacion.", 400);
+  }
+
+  if (requestedMessageIds.length === 0) {
+    throw new JolokiaRequestError("Debes seleccionar al menos un mensaje para ejecutar la accion.", 400);
+  }
+
+  if (action === "move") {
+    if (!destinationQueueName) {
+      throw new JolokiaRequestError("Debes indicar la queue destino para mover mensajes.", 400);
+    }
+
+    if (normalizeQueueName(destinationQueueName) === normalizeQueueName(queueName)) {
+      throw new JolokiaRequestError("La queue destino debe ser distinta de la queue origen.", 400);
+    }
+  }
+
+  const objectName = await getQueueObjectName(queueName);
+  const rawMessages = await readQueueMessagesAsJson(objectName);
+  const byMessageId = new Map(
+    rawMessages
+      .map((record) => normalizeMessageDetail(record))
+      .filter((message): message is ExplorerMessageDetail => message !== null)
+      .map((message) => [message.messageId, message]),
+  );
+
+  const failed: Array<{ messageId: string; reason: string }> = [];
+  let succeededCount = 0;
+
+  for (const messageId of requestedMessageIds) {
+    const message = byMessageId.get(messageId);
+
+    if (!message) {
+      failed.push({
+        messageId,
+        reason: "El mensaje ya no esta disponible en la cola origen.",
+      });
+      continue;
+    }
+
+    if (message.brokerMessageId === null) {
+      failed.push({
+        messageId,
+        reason: "No se pudo resolver el identificador interno del broker para este mensaje.",
+      });
+      continue;
+    }
+
+    if (action === "retry" && !message.canRetrySafely) {
+      failed.push({
+        messageId,
+        reason: "El mensaje no expone destino original reutilizable. Usa Move para elegir una queue destino.",
+      });
+      continue;
+    }
+
+    try {
+      if (action === "retry") {
+        await executeBooleanQueueOperation(
+          objectName,
+          "retryMessage(long)",
+          [message.brokerMessageId],
+          `No se pudo reintentar el mensaje ${messageId}.`,
+        );
+      } else {
+        await executeBooleanQueueOperation(
+          objectName,
+          "moveMessage(long,java.lang.String)",
+          [message.brokerMessageId, destinationQueueName],
+          `No se pudo mover el mensaje ${messageId} a ${destinationQueueName}.`,
+        );
+      }
+
+      succeededCount += 1;
+    } catch (error) {
+      failed.push({
+        messageId,
+        reason:
+          error instanceof Error
+            ? error.message
+            : "La operacion sobre el mensaje fallo por un error no controlado.",
+      });
+    }
+  }
+
+  return {
+    queueName,
+    action,
+    requestedCount: requestedMessageIds.length,
+    succeededCount,
+    failed,
+    lastUpdatedAt: new Date().toISOString(),
+  } satisfies QueueMessageActionResponse;
 }

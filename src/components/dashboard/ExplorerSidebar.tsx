@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Settings2 } from "lucide-react";
 import type { QueueSummary } from "../../types/queues";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -22,9 +22,7 @@ type ExplorerSidebarProps = {
   isLoading: boolean;
   isError: boolean;
   errorMessage?: string;
-  onOpenCreateAddress: () => void;
-  onOpenCreateQueue: () => void;
-  onOpenDeleteAddress: () => void;
+  onOpenAdmin: () => void;
 };
 
 const numberFormatter = new Intl.NumberFormat("es-ES");
@@ -40,9 +38,7 @@ export function ExplorerSidebar({
   isLoading,
   isError,
   errorMessage,
-  onOpenCreateAddress,
-  onOpenCreateQueue,
-  onOpenDeleteAddress,
+  onOpenAdmin,
 }: ExplorerSidebarProps) {
   const totalQueues = groups.reduce((total, group) => total + group.queues.length, 0);
 
@@ -54,17 +50,9 @@ export function ExplorerSidebar({
           <Badge variant="neutral">{numberFormatter.format(totalQueues)} visibles</Badge>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" className="px-3" onClick={onOpenCreateAddress}>
-            <Plus className="h-4 w-4" />
-            Address
-          </Button>
-          <Button variant="secondary" className="px-3" onClick={onOpenCreateQueue}>
-            <Plus className="h-4 w-4" />
-            Queue
-          </Button>
-          <Button variant="secondary" className="px-3" onClick={onOpenDeleteAddress}>
-            <Trash2 className="h-4 w-4" />
-            Eliminar address
+          <Button variant="secondary" className="px-3" onClick={onOpenAdmin}>
+            <Settings2 className="h-4 w-4" />
+            Gestion
           </Button>
         </div>
         <label className="relative block">

@@ -194,6 +194,7 @@ export function ExplorerMessageDetailPanel({
                 {detail.deliveryCount !== null ? (
                   <Badge variant="neutral">delivery {detail.deliveryCount}</Badge>
                 ) : null}
+                {detail.canRetrySafely ? <Badge variant="warning">retry-safe</Badge> : null}
               </div>
               <div className="grid gap-2 text-sm sm:grid-cols-2">
                 <div className="app-panel-inset px-3 py-2">
@@ -211,8 +212,16 @@ export function ExplorerMessageDetailPanel({
                   <p className="mt-1 text-foreground">{detail.priority ?? "-"}</p>
                 </div>
                 <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Queue</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Broker ID</p>
+                  <p className="mt-1 text-foreground">{detail.brokerMessageId ?? "-"}</p>
+                </div>
+                <div className="app-panel-inset px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Queue actual</p>
                   <p className="mt-1 text-foreground">{queue.name}</p>
+                </div>
+                <div className="app-panel-inset px-3 py-2">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Origen</p>
+                  <p className="mt-1 text-foreground">{detail.originalQueue ?? detail.originalAddress ?? "-"}</p>
                 </div>
               </div>
             </section>

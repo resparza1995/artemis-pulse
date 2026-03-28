@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   AlertTriangle,
   Clock3,
@@ -6,6 +6,7 @@ import {
   Server,
   Users,
 } from "lucide-react";
+import { cn } from "../../lib/utils";
 import type { QueueSummary } from "../../types/queues";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -17,6 +18,9 @@ type QueueDetailPanelProps = {
   totalQueues: number;
   backlogQueues: number;
   criticalQueues: number;
+  withCard?: boolean;
+  showHeader?: boolean;
+  className?: string;
 };
 
 const numberFormatter = new Intl.NumberFormat("es-ES");
@@ -115,133 +119,164 @@ function Meter({
   );
 }
 
+function QueueDetailBody({
+  queue,
+  brokerLabel,
+  totalQueues,
+  backlogQueues,
+  criticalQueues,
+}: Omit<QueueDetailPanelProps, "withCard" | "showHeader" | "className">) {
+  return (
+    <div className="space-y-4">
+      {queue ? (
+        <>
+          <section className="app-panel-soft space-y-3 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Selected queue
+                </p>
+                <h3 className="font-display text-xl font-semibold text-foreground">
+                  {queue.name}
+                </h3>
+                <p className="text-sm text-muted-foreground">{queue.address}</p>
+              </div>
+              <QueueHealthBadge status={queue.status} />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {queue.isDlq ? <Badge variant="outline">DLQ</Badge> : <Badge variant="neutral">queue</Badge>}
+              <Badge variant="neutral">updated {dateFormatter.format(new Date(queue.lastUpdatedAt))}</Badge>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-2 gap-2.5">
+            <MetricTile
+              label="Messages"
+              value={numberFormatter.format(queue.messageCount)}
+              icon={Inbox}
+            />
+            <MetricTile
+              label="Consumers"
+              value={numberFormatter.format(queue.consumerCount)}
+              icon={Users}
+            />
+            <MetricTile
+              label="Delivering"
+              value={numberFormatter.format(queue.deliveringCount)}
+              icon={Activity}
+            />
+            <MetricTile
+              label="Scheduled"
+              value={numberFormatter.format(queue.scheduledCount)}
+              icon={Clock3}
+            />
+          </section>
+
+          <section className="app-panel-soft space-y-4 p-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Operational read
+              </p>
+              <p className="text-sm leading-6 text-foreground/90">{getOperationalNote(queue)}</p>
+            </div>
+
+            <div className="space-y-3">
+              <Meter label="Backlog pressure" value={getBacklogPressure(queue.messageCount)} />
+              <Meter
+                label="Delivery activity"
+                value={getDeliveryActivity(queue.deliveringCount, queue.messageCount)}
+              />
+              <Meter
+                label="Scheduled load"
+                value={getScheduledLoad(queue.scheduledCount, queue.messageCount)}
+              />
+            </div>
+          </section>
+        </>
+      ) : (
+        <section className="app-empty-state space-y-2 p-4">
+          <p className="font-medium text-foreground">Sin cola seleccionada</p>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Elige una fila en la vista principal para ver su lectura operativa y sus contadores.
+          </p>
+        </section>
+      )}
+
+      <section className="app-panel-soft space-y-3 p-4">
+        <div className="flex items-center gap-2">
+          <Server className="h-4 w-4 text-primary/80" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Broker snapshot
+          </p>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Broker</span>
+            <span className="text-foreground">{brokerLabel}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Queues visible</span>
+            <span className="text-foreground">{numberFormatter.format(totalQueues)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">With backlog</span>
+            <span className="text-foreground">{numberFormatter.format(backlogQueues)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Critical queues</span>
+            <span className="flex items-center gap-2 text-foreground">
+              <AlertTriangle className="h-3.5 w-3.5 text-[var(--warning)]" />
+              {numberFormatter.format(criticalQueues)}
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function QueueDetailPanel({
   queue,
   brokerLabel,
   totalQueues,
   backlogQueues,
   criticalQueues,
+  withCard = true,
+  showHeader = true,
+  className,
 }: QueueDetailPanelProps) {
+  const body = (
+    <QueueDetailBody
+      queue={queue}
+      brokerLabel={brokerLabel}
+      totalQueues={totalQueues}
+      backlogQueues={backlogQueues}
+      criticalQueues={criticalQueues}
+    />
+  );
+
+  if (!withCard) {
+    return <div className={cn("space-y-4", className)}>{body}</div>;
+  }
+
   return (
-    <Card className="xl:sticky xl:top-6">
-      <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <CardTitle>Queue detail</CardTitle>
-            <CardDescription>
-              Lectura contextual de la cola seleccionada.
-            </CardDescription>
+    <Card className={className}>
+      {showHeader ? (
+        <CardHeader className="gap-3 border-b border-[color:var(--border)] pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Queue detail</CardTitle>
+              <CardDescription>
+                Lectura contextual de la cola seleccionada.
+              </CardDescription>
+            </div>
+            <Badge variant="neutral">live</Badge>
           </div>
-          <Badge variant="neutral">live</Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4 pt-5">
-        {queue ? (
-          <>
-            <section className="app-panel-soft space-y-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Selected queue
-                  </p>
-                  <h3 className="font-display text-xl font-semibold text-foreground">
-                    {queue.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{queue.address}</p>
-                </div>
-                <QueueHealthBadge status={queue.status} />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {queue.isDlq ? <Badge variant="outline">DLQ</Badge> : <Badge variant="neutral">queue</Badge>}
-                <Badge variant="neutral">updated {dateFormatter.format(new Date(queue.lastUpdatedAt))}</Badge>
-              </div>
-            </section>
-
-            <section className="grid grid-cols-2 gap-2.5">
-              <MetricTile
-                label="Messages"
-                value={numberFormatter.format(queue.messageCount)}
-                icon={Inbox}
-              />
-              <MetricTile
-                label="Consumers"
-                value={numberFormatter.format(queue.consumerCount)}
-                icon={Users}
-              />
-              <MetricTile
-                label="Delivering"
-                value={numberFormatter.format(queue.deliveringCount)}
-                icon={Activity}
-              />
-              <MetricTile
-                label="Scheduled"
-                value={numberFormatter.format(queue.scheduledCount)}
-                icon={Clock3}
-              />
-            </section>
-
-            <section className="app-panel-soft space-y-4 p-4">
-              <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Operational read
-                </p>
-                <p className="text-sm leading-6 text-foreground/90">{getOperationalNote(queue)}</p>
-              </div>
-
-              <div className="space-y-3">
-                <Meter label="Backlog pressure" value={getBacklogPressure(queue.messageCount)} />
-                <Meter
-                  label="Delivery activity"
-                  value={getDeliveryActivity(queue.deliveringCount, queue.messageCount)}
-                />
-                <Meter
-                  label="Scheduled load"
-                  value={getScheduledLoad(queue.scheduledCount, queue.messageCount)}
-                />
-              </div>
-            </section>
-          </>
-        ) : (
-          <section className="app-empty-state space-y-2 p-4">
-            <p className="font-medium text-foreground">Sin cola seleccionada</p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Elige una fila en la vista principal para ver su lectura operativa y sus contadores.
-            </p>
-          </section>
-        )}
-
-        <section className="app-panel-soft space-y-3 p-4">
-          <div className="flex items-center gap-2">
-            <Server className="h-4 w-4 text-primary/80" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Broker snapshot
-            </p>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Broker</span>
-              <span className="text-foreground">{brokerLabel}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Queues visible</span>
-              <span className="text-foreground">{numberFormatter.format(totalQueues)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">With backlog</span>
-              <span className="text-foreground">{numberFormatter.format(backlogQueues)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Critical queues</span>
-              <span className="flex items-center gap-2 text-foreground">
-                <AlertTriangle className="h-3.5 w-3.5 text-[var(--warning)]" />
-                {numberFormatter.format(criticalQueues)}
-              </span>
-            </div>
-          </div>
-        </section>
-      </CardContent>
+        </CardHeader>
+      ) : null}
+      <CardContent className="space-y-4 pt-5">{body}</CardContent>
     </Card>
   );
 }

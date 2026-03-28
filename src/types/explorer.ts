@@ -1,5 +1,11 @@
+export type MessageActionType = "retry" | "move";
+
 export type ExplorerMessageSummary = {
   messageId: string;
+  brokerMessageId: number | null;
+  originalAddress: string | null;
+  originalQueue: string | null;
+  canRetrySafely: boolean;
   timestamp: string | null;
   priority: number | null;
   size: number | null;
@@ -20,6 +26,10 @@ export type QueueMessagesResponse = {
 
 export type ExplorerMessageDetail = {
   messageId: string;
+  brokerMessageId: number | null;
+  originalAddress: string | null;
+  originalQueue: string | null;
+  canRetrySafely: boolean;
   timestamp: string | null;
   priority: number | null;
   size: number | null;
@@ -63,5 +73,19 @@ export type PublishMessageResponse = {
   queueName: string;
   messageIds: string[];
   sentCount: number;
+  lastUpdatedAt: string;
+};
+
+export type QueueMessageActionFailure = {
+  messageId: string;
+  reason: string;
+};
+
+export type QueueMessageActionResponse = {
+  queueName: string;
+  action: MessageActionType;
+  requestedCount: number;
+  succeededCount: number;
+  failed: QueueMessageActionFailure[];
   lastUpdatedAt: string;
 };

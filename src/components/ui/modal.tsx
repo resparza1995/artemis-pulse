@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -36,7 +36,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "app-modal relative z-10 w-full max-w-2xl",
+          "app-modal relative z-10 flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden",
           className,
         )}
       >
@@ -56,7 +56,7 @@ export function Modal({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="app-scroll-y min-h-0 flex-1 px-6 py-5">{children}</div>
         {footer ? <div className="border-t border-[color:var(--border)] px-6 py-4">{footer}</div> : null}
       </div>
     </div>

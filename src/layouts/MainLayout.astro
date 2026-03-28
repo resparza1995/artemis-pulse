@@ -1,4 +1,4 @@
----
+﻿---
 import "../styles/global.css";
 
 type Props = {
@@ -33,15 +33,18 @@ const navItems = [
     <title>{title}</title>
   </head>
   <body>
-    <main class="relative min-h-screen">
+    <main class="relative h-[100dvh] overflow-hidden">
       <div class="app-shell-backdrop pointer-events-none absolute inset-x-0 top-0 h-64"></div>
       <div class="app-shell-glow pointer-events-none absolute right-0 top-28 h-72 w-72 rounded-full blur-3xl"></div>
 
-      <div class="relative mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-<header class="app-header-divider mb-3 py-2 sm:mb-4 sm:py-3">
+      <div class="relative mx-auto flex h-full w-full max-w-[1600px] flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <header class="app-header-divider mb-3 flex-none py-2 sm:mb-4 sm:py-3">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
-              <p title={pageDescription ?? ""} class="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/85 cursor-help">
+              <p
+                title={pageDescription ?? ""}
+                class="cursor-help text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/85"
+              >
                 Artemis Pulse
               </p>
               <span class="text-[10px] font-semibold text-muted-foreground">|</span>
@@ -75,8 +78,12 @@ const navItems = [
                 })}
               </nav>
             </div>
+          </div>
+        </header>
 
-        <slot />
+        <div class="min-h-0 flex-1 overflow-hidden">
+          <slot />
+        </div>
       </div>
     </main>
   </body>
