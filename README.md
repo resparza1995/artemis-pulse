@@ -7,6 +7,8 @@ La app esta orientada a tres vistas principales:
 - **Explorer**: trabajo diario sobre vinculaciones (addresses), colas (queues) y mensajes
 - **Topology**: mapa de red visual del broker
 
+📷 Screenshots [here](docs/app-preview.md)  
+
 ## Despliegue en CubePath con Dokploy
 
 Accede [aquí](http://vps22550.cubepath.net:4321/) para probar la app.  
