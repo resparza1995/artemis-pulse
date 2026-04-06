@@ -1,4 +1,4 @@
-# Artemis Pulse
+﻿# Artemis Pulse
 
 Artemis Pulse es una consola web para operar e inspeccionar brokers de ActiveMQ Artemis desde una interfaz construida con Astro, React y Tailwind CSS.
 
@@ -15,13 +15,7 @@ La app se organiza alrededor de tres vistas:
 bun install
 ```
 
-2. Crea tu entorno local:
-
-```bash
-cp .env.example .env
-```
-
-3. Arranca la app:
+2. Arranca la app:
 
 ```bash
 bun run dev
@@ -29,22 +23,15 @@ bun run dev
 
 La app queda disponible en `http://localhost:4321`.
 
-## Variables de entorno
-
-`.env.example` incluye:
-
-```env
-ARTEMIS_BASE_URL=http://localhost:8161/console/jolokia
-ARTEMIS_USERNAME=admin
-ARTEMIS_PASSWORD=admin
-POLL_INTERVAL_MS=3000
-```
+En el primer arranque la app usa valores por defecto internos. Desde el icono de `Settings` del header puedes configurar la conexion a Artemis y esos datos se persistiran en `data/settings.json`.
 
 ## Docker Compose
 
 El repositorio incluye `docker-compose.yml` para levantar:
 - `artemis`
 - `app`
+
+El servicio `app` monta un volumen en `/app/data` para conservar `settings.json` entre reinicios.
 
 Arranque:
 

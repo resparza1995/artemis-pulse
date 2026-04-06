@@ -27,5 +27,10 @@ services:
     depends_on:
       artemis:
         condition: service_healthy
+    volumes:
+      - app-data:/app/data
     ports:
       - "4321:4321"
+
+volumes:
+  app-data:

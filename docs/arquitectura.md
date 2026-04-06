@@ -1,4 +1,4 @@
-# Arquitectura de Artemis Pulse
+﻿# Arquitectura de Artemis Pulse
 
 ## Resumen
 
@@ -108,7 +108,16 @@ Responsabilidades:
 
 ### `src/lib/config.ts`
 
-Lee y normaliza configuracion de entorno del broker.
+Resuelve la configuracion activa de la app a partir de `settings.json`.
+
+### `src/lib/settings-store.ts`
+
+Persistencia sencilla de settings de producto en `data/settings.json`.
+
+Comportamiento:
+- usa valores por defecto internos en el primer arranque
+- si existe `settings.json`, tiene prioridad
+- permite producto instalable sin editar codigo
 
 ### `src/lib/queue-status.ts`
 
@@ -133,6 +142,20 @@ Transforma datos del broker en un grafo para `Topology`.
 Regla practica:
 - si un patron visual se repite entre features, debe bajar a `ui`
 
+## Settings de producto
+
+El header incorpora un boton de `Settings` que abre un modal para editar:
+- URL de Artemis / Jolokia
+- usuario
+- password
+- `poll interval`
+
+La UI habla con:
+- `GET /api/settings`
+- `POST /api/settings`
+
+Tras guardar, la pagina se recarga para reflejar broker label y polling actualizados.
+
 ## Flujo de datos
 
 1. El usuario interactua con una vista React.
@@ -152,3 +175,4 @@ El repo incluye:
 `docker-compose.yml` levanta:
 - `artemis`
 - `app`
+

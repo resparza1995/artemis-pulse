@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import { HeaderSettingsButton } from "../features/settings/HeaderSettingsButton";
 import { Toaster } from "../ui/toaster";
 import "../styles/global.css";
 
@@ -84,6 +85,8 @@ const navItems = [
                   );
                 })}
               </nav>
+
+              <HeaderSettingsButton client:load />
             </div>
           </div>
         </header>
