@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useI18n } from "../../../i18n/react";
 import { Button } from "../../../ui/button";
 import { FilterableCombobox } from "../../../ui/filterable-combobox";
 import { Modal } from "../../../ui/modal";
@@ -24,6 +25,7 @@ export function DeleteAddressModal({
   isPending,
   errorMessage,
 }: DeleteAddressModalProps) {
+  const { messages } = useI18n();
   const [address, setAddress] = useState(initialAddress ?? "");
   const [force, setForce] = useState(false);
 
@@ -44,21 +46,21 @@ export function DeleteAddressModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Eliminar address"
-      description="El broker rechazara la operacion si la address todavia tiene queues asociadas. Selecciona una address y confirma."
+      title={messages.explorer.modals.deleteAddress.title}
+      description={messages.explorer.modals.deleteAddress.description}
       className="max-w-3xl min-h-[34rem]"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             {onBack ? (
               <Button type="button" variant="ghost" onClick={onBack} disabled={isPending}>
-                Atras
+                {messages.common.back}
               </Button>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
-              Cancelar
+              {messages.common.cancel}
             </Button>
             <Button
               type="button"
@@ -66,20 +68,17 @@ export function DeleteAddressModal({
               onClick={() => void onConfirm({ address, force })}
               disabled={isPending || !canDelete}
             >
-              {isPending ? "Eliminando..." : "Eliminar address"}
+              {isPending ? messages.explorer.modals.deleteAddress.pending : messages.explorer.modals.deleteAddress.button}
             </Button>
           </div>
         </div>
       }
     >
       <div className="space-y-4">
-        <div className="app-notice app-notice-warning text-sm">
-          Usa esta accion solo cuando quieras retirar una address de pruebas. Si tiene queues
-          enlazadas, primero elimina esas queues o usa la opcion de forzar.
-        </div>
+        <div className="app-notice app-notice-warning text-sm">{messages.explorer.modals.deleteAddress.warning}</div>
 
         <label className="space-y-2 text-sm text-foreground">
-          <span>Address</span>
+          <span>{messages.explorer.modals.deleteAddress.address}</span>
           <FilterableCombobox
             value={address}
             onChange={setAddress}
@@ -97,22 +96,16 @@ export function DeleteAddressModal({
             className="app-checkbox mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-[color:var(--border)] bg-transparent"
           />
           <div className="flex flex-col gap-0.5">
-            <span className="font-medium leading-none">Eliminar colas asociadas</span>
-            <span className="text-xs opacity-55">
-              Borra todas las colas de esta address y sus mensajes antes de eliminarla.
-            </span>
+            <span className="font-medium leading-none">{messages.explorer.modals.deleteAddress.forceLabel}</span>
+            <span className="text-xs opacity-55">{messages.explorer.modals.deleteAddress.forceHint}</span>
           </div>
         </label>
 
         {addresses.length === 0 ? (
-          <div className="app-notice app-notice-neutral text-sm">
-            No hay addresses disponibles para eliminar.
-          </div>
+          <div className="app-notice app-notice-neutral text-sm">{messages.explorer.modals.deleteAddress.noAddresses}</div>
         ) : null}
 
-        {errorMessage ? (
-          <div className="app-notice app-notice-critical text-sm">{errorMessage}</div>
-        ) : null}
+        {errorMessage ? <div className="app-notice app-notice-critical text-sm">{errorMessage}</div> : null}
       </div>
     </Modal>
   );

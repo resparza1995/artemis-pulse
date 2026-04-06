@@ -1,4 +1,4 @@
-import {
+﻿import {
   QueryClient,
   QueryClientProvider,
   useMutation,
@@ -41,9 +41,12 @@ import { PurgeQueueModal } from "./modals/PurgeQueueModal";
 import { RetryMessagesModal } from "./modals/RetryMessagesModal";
 import { MODAL_TRANSITION_MS } from "../../ui/modal";
 import { toastManager } from "../../lib/toast";
+import { getClientLocale, getMessages, type Locale } from "../../i18n";
+import { I18nProvider, useI18n } from "../../i18n/react";
 
 type ExplorerViewProps = {
   brokerLabel: string;
+  locale: Locale;
 };
 
 type ApiError = {
@@ -102,7 +105,7 @@ async function parseResponse<T>(response: Response) {
   if (!response.ok) {
     throw new Error(
       (payload && typeof payload === "object" && "message" in payload && payload.message) ||
-        "La respuesta del backend no fue valida.",
+        getMessages(getClientLocale()).explorer.view.backendInvalid,
     );
   }
 
@@ -117,7 +120,7 @@ async function fetchQueues() {
   const payload = await parseResponse<QueueSummary[]>(response);
 
   if (!Array.isArray(payload)) {
-    throw new Error("La respuesta de colas no tiene el formato esperado.");
+    throw new Error(getMessages(getClientLocale()).explorer.view.queueResponseInvalid);
   }
 
   return payload;
@@ -302,6 +305,7 @@ function buildMessageActionNotice(result: QueueMessageActionResponse): Operation
 }
 
 function ExplorerViewContent(_: ExplorerViewProps) {
+  const { messages } = useI18n();
   const initialQueueFromUrl =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("queue") ?? ""
@@ -496,7 +500,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     mutationFn: createAddressRequest,
     onSuccess: async (result) => {
       setIsCreateAddressOpen(false);
-      toastManager.success(`Address ${result.address} creada. Podras asociarle queues desde la UI.`);
+      toastManager.success(`Address ${result.address} ${messages.explorer.modals.createAddress.button.toLowerCase()}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -507,7 +511,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsCreateQueueOpen(false);
       setSearch("");
       setSelectedQueueName(queue.name);
-      toastManager.success(`Queue ${queue.name} creada correctamente.`);
+      toastManager.success(`Queue ${queue.name} ${messages.explorer.modals.createQueue.button.toLowerCase()}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -515,14 +519,14 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const publishMutation = useMutation({
     mutationFn: (payload: PublishPayload) => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para publicar mensajes.");
+        throw new Error(messages.explorer.view.selectQueueToPublish);
       }
 
       return publishMessageRequest(selectedQueueName, payload);
     },
     onSuccess: async (result) => {
       setIsPublishOpen(false);
-      toastManager.success(`Se publicaron ${result.sentCount} mensaje(s) en ${result.queueName}.`);
+      toastManager.success(`${messages.explorer.modals.publish.button}: ${result.sentCount} -> ${result.queueName}.`);
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
       });
@@ -533,7 +537,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const purgeMutation = useMutation({
     mutationFn: () => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para limpiarla.");
+        throw new Error(messages.explorer.view.selectQueueToPurge);
       }
 
       return purgeQueueRequest(selectedQueueName);
@@ -542,7 +546,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsPurgeOpen(false);
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      toastManager.success(`Se limpiaron ${result.removedCount} mensajes de ${result.queueName}.`);
+      toastManager.success(`${messages.explorer.messagesPanel.purge}: ${result.removedCount} -> ${result.queueName}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -557,7 +561,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const consumeMutation = useMutation({
     mutationFn: (count: number) => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para consumir mensajes.");
+        throw new Error(messages.explorer.view.selectQueueToConsume);
       }
 
       return consumeMessagesRequest(selectedQueueName, count);
@@ -566,7 +570,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setIsConsumeOpen(false);
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      toastManager.success(`Consumer temporal: ${result.consumedCount} mensaje(s) consumidos de ${result.queueName}.`);
+      toastManager.success(`${messages.explorer.modals.consume.button}: ${result.consumedCount} -> ${result.queueName}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -581,7 +585,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const retryMutation = useMutation({
     mutationFn: () => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para reintentar mensajes.");
+        throw new Error(messages.explorer.view.selectQueueToRetry);
       }
 
       return executeMessageActionRequest(selectedQueueName, {
@@ -608,7 +612,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const moveMutation = useMutation({
     mutationFn: (destinationQueueName: string) => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para mover mensajes.");
+        throw new Error(messages.explorer.view.selectQueueToMove);
       }
 
       return executeMessageActionRequest(selectedQueueName, {
@@ -636,7 +640,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
   const deleteQueueMutation = useMutation({
     mutationFn: () => {
       if (!selectedQueueName) {
-        throw new Error("Selecciona primero una queue para eliminarla.");
+        throw new Error(messages.explorer.view.selectQueueToDelete);
       }
 
       return deleteQueueRequest(selectedQueueName);
@@ -646,7 +650,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
       setSelectedQueueName("");
       setSelectedMessageId("");
       setSelectedMessageIds([]);
-      toastManager.success(`Queue ${result.queueName} eliminada.`);
+      toastManager.success(`${messages.explorer.modals.deleteQueue.button}: ${result.queueName}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
       await queryClient.invalidateQueries({
         queryKey: ["queue-messages", result.queueName, messageLimit],
@@ -662,7 +666,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
     mutationFn: (payload: { address: string; force: boolean }) => deleteAddressRequest(payload),
     onSuccess: async (result) => {
       setIsDeleteAddressOpen(false);
-      toastManager.success(`Address ${result.address} eliminada.`);
+      toastManager.success(`${messages.explorer.modals.deleteAddress.button}: ${result.address}.`);
       await queryClient.invalidateQueries({ queryKey: ["queues"] });
     },
   });
@@ -776,7 +780,7 @@ function ExplorerViewContent(_: ExplorerViewProps) {
               className="ml-auto text-current opacity-80 transition hover:opacity-100"
               onClick={() => setOperationNotice(null)}
             >
-              cerrar
+              {messages.common.close}
             </button>
           </div>
         ) : null}
@@ -1037,11 +1041,14 @@ export default function ExplorerView(props: ExplorerViewProps) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ExplorerViewContent {...props} />
-    </QueryClientProvider>
+    <I18nProvider locale={props.locale}>
+      <QueryClientProvider client={queryClient}>
+        <ExplorerViewContent {...props} />
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
+
 
 
 

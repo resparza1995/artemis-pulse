@@ -1,5 +1,6 @@
-﻿import type { ReactNode } from 'react';
+﻿import type { ReactNode } from "react";
 import { Building2, FolderPlus, Trash2 } from "lucide-react";
+import { useI18n } from "../../i18n/react";
 import { Button } from "../../ui/button";
 import { Modal } from "../../ui/modal";
 
@@ -48,17 +49,19 @@ export function ExplorerAdminModal({
   onOpenCreateQueue,
   onOpenDeleteAddress,
 }: ExplorerAdminModalProps) {
+  const { messages } = useI18n();
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Gestion"
-      description="Acciones rapidas para addresses y queues."
+      title={messages.explorer.admin.title}
+      description={messages.explorer.admin.description}
       className="max-w-3xl"
       footer={
         <div className="flex justify-end">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cerrar
+            {messages.common.close}
           </Button>
         </div>
       }
@@ -66,20 +69,20 @@ export function ExplorerAdminModal({
       <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
           <ActionCard
-            title="Nueva address"
-            description="Prepara una address nueva para pruebas o para futuras queues."
+            title={messages.explorer.admin.createAddressTitle}
+            description={messages.explorer.admin.createAddressDescription}
             icon={<Building2 className="h-4 w-4 text-primary" />}
             onClick={onOpenCreateAddress}
           />
           <ActionCard
-            title="Nueva queue"
-            description="Crea una queue sobre la address actual o sobre una nueva."
+            title={messages.explorer.admin.createQueueTitle}
+            description={messages.explorer.admin.createQueueDescription}
             icon={<FolderPlus className="h-4 w-4 text-primary" />}
             onClick={onOpenCreateQueue}
           />
           <ActionCard
-            title="Eliminar address"
-            description="Borra una address de pruebas. Artemis la rechazara si aun tiene queues."
+            title={messages.explorer.admin.deleteAddressTitle}
+            description={messages.explorer.admin.deleteAddressDescription}
             icon={<Trash2 className="h-4 w-4 text-primary" />}
             onClick={onOpenDeleteAddress}
           />
@@ -88,19 +91,18 @@ export function ExplorerAdminModal({
         <div className="grid gap-3 md:grid-cols-2">
           <div className="app-panel-soft space-y-2 p-4 text-sm">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Address actual
+              {messages.explorer.admin.currentAddress}
             </p>
-            <p className="font-medium text-foreground">{selectedAddress ?? "ninguna"}</p>
+            <p className="font-medium text-foreground">{selectedAddress ?? messages.common.none}</p>
           </div>
           <div className="app-panel-soft space-y-2 p-4 text-sm">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Queue actual
+              {messages.explorer.admin.currentQueue}
             </p>
-            <p className="font-medium text-foreground">{selectedQueueName ?? "ninguna"}</p>
+            <p className="font-medium text-foreground">{selectedQueueName ?? messages.common.none}</p>
           </div>
         </div>
       </div>
     </Modal>
   );
 }
-

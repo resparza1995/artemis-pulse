@@ -2,6 +2,7 @@
 import { FileSearch, RefreshCw } from "lucide-react";
 import type { ExplorerMessageDetail } from "./types";
 import type { QueueSummary } from "../../types/queues";
+import { useI18n } from "../../i18n/react";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../ui/card";
@@ -54,11 +55,11 @@ function formatXml(input: string) {
     .join("\n");
 }
 
-function formatBody(body: string | null) {
+function formatBody(body: string | null, messages: ReturnType<typeof useI18n>["messages"]) {
   if (!body) {
     return {
-      label: "Texto",
-      content: "Sin body legible para este mensaje.",
+      label: messages.explorer.detail.text,
+      content: messages.explorer.detail.noBody,
     };
   }
 
@@ -67,34 +68,28 @@ function formatBody(body: string | null) {
   if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
     try {
       return {
-        label: "JSON",
+        label: messages.explorer.detail.json,
         content: JSON.stringify(JSON.parse(trimmed), null, 2),
       };
     } catch {
-      // Fallback to the raw body below.
+      // fallback
     }
   }
 
   if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
     return {
-      label: "XML",
+      label: messages.explorer.detail.xml,
       content: formatXml(trimmed),
     };
   }
 
   return {
-    label: "Texto",
+    label: messages.explorer.detail.text,
     content: body,
   };
 }
 
-function DetailSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+function DetailSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="app-panel-soft space-y-3 p-4">
       <div className="flex items-center gap-2">
@@ -106,18 +101,15 @@ function DetailSection({
   );
 }
 
-function KeyValueGrid({ entries }: { entries: [string, unknown][] }) {
+function KeyValueGrid({ entries, emptyLabel }: { entries: [string, unknown][]; emptyLabel: string }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>;
+    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   }
 
   return (
     <div className="space-y-2">
       {entries.map(([key, value]) => (
-        <div
-          key={key}
-          className="app-panel-inset grid gap-1 px-3 py-2 text-sm sm:grid-cols-[140px_minmax(0,1fr)]"
-        >
+        <div key={key} className="app-panel-inset grid gap-1 px-3 py-2 text-sm sm:grid-cols-[140px_minmax(0,1fr)]">
           <span className="text-muted-foreground">{key}</span>
           <span className="break-words text-foreground">{typeof value === "string" ? value : JSON.stringify(value)}</span>
         </div>
@@ -136,54 +128,32 @@ export function ExplorerMessageDetailPanel({
   errorMessage,
   onRefresh,
 }: ExplorerMessageDetailPanelProps) {
-  const formattedBody = formatBody(detail?.body ?? null);
+  const { messages } = useI18n();
+  const formattedBody = formatBody(detail?.body ?? null, messages);
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="flex-none gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <CardTitle>Detalle del mensaje</CardTitle>
+            <CardTitle>{messages.explorer.detail.title}</CardTitle>
             <CardDescription>
               {queue
-                ? `Queue ${queue.name}. Inspecciona metadatos, body y properties del mensaje seleccionado.`
-                : "Selecciona una queue para empezar a inspeccionar mensajes."}
+                ? `Queue ${queue.name}. ${messages.explorer.detail.headers}, ${messages.explorer.detail.body.toLowerCase()} y ${messages.explorer.detail.properties.toLowerCase()}.`
+                : messages.explorer.detail.descriptionEmpty}
             </CardDescription>
           </div>
-          <Button
-            variant="secondary"
-            onClick={onRefresh}
-            disabled={!selectedMessageId || isFetching}
-          >
+          <Button variant="secondary" onClick={onRefresh} disabled={!selectedMessageId || isFetching}>
             <RefreshCw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-            {isFetching ? "Actualizando" : "Refrescar"}
+            {isFetching ? messages.explorer.messagesPanel.refreshing : messages.common.refresh}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="app-scroll-y min-h-0 flex-1 space-y-4 pt-5">
-        {!queue ? (
-          <div className="app-empty-state p-4 text-sm text-muted-foreground">
-            Todavia no hay una queue seleccionada.
-          </div>
-        ) : null}
-
-        {queue && !selectedMessageId && !isLoading ? (
-          <div className="app-empty-state p-4 text-sm text-muted-foreground">
-            Selecciona un mensaje de la lista para ver su detalle.
-          </div>
-        ) : null}
-
-        {queue && selectedMessageId && isLoading ? (
-          <div className="app-panel-soft p-4 text-sm text-muted-foreground">
-            Cargando detalle del mensaje...
-          </div>
-        ) : null}
-
-        {queue && selectedMessageId && isError ? (
-          <div className="app-notice app-notice-critical text-sm">
-            {errorMessage ?? "No se pudo obtener el detalle del mensaje."}
-          </div>
-        ) : null}
+        {!queue ? <div className="app-empty-state p-4 text-sm text-muted-foreground">{messages.explorer.detail.noQueue}</div> : null}
+        {queue && !selectedMessageId && !isLoading ? <div className="app-empty-state p-4 text-sm text-muted-foreground">{messages.explorer.detail.noMessage}</div> : null}
+        {queue && selectedMessageId && isLoading ? <div className="app-panel-soft p-4 text-sm text-muted-foreground">{messages.explorer.detail.loading}</div> : null}
+        {queue && selectedMessageId && isError ? <div className="app-notice app-notice-critical text-sm">{errorMessage ?? messages.explorer.detail.fetchError}</div> : null}
 
         {queue && selectedMessageId && !isLoading && !isError && detail ? (
           <>
@@ -191,55 +161,31 @@ export function ExplorerMessageDetailPanel({
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="neutral">{detail.messageId}</Badge>
                 {detail.contentType ? <Badge variant="outline">{detail.contentType}</Badge> : null}
-                {detail.deliveryCount !== null ? (
-                  <Badge variant="neutral">delivery {detail.deliveryCount}</Badge>
-                ) : null}
-                {detail.canRetrySafely ? <Badge variant="warning">retry-safe</Badge> : null}
+                {detail.deliveryCount !== null ? <Badge variant="neutral">{messages.explorer.detail.delivery} {detail.deliveryCount}</Badge> : null}
+                {detail.canRetrySafely ? <Badge variant="warning">{messages.explorer.detail.retrySafe}</Badge> : null}
               </div>
               <div className="grid gap-2 text-sm sm:grid-cols-2">
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Hora</p>
-                  <p className="mt-1 text-foreground">{renderTimestamp(detail.timestamp)}</p>
-                </div>
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Tamano</p>
-                  <p className="mt-1 text-foreground">
-                    {detail.size !== null ? numberFormatter.format(detail.size) : "-"}
-                  </p>
-                </div>
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Prioridad</p>
-                  <p className="mt-1 text-foreground">{detail.priority ?? "-"}</p>
-                </div>
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Broker ID</p>
-                  <p className="mt-1 text-foreground">{detail.brokerMessageId ?? "-"}</p>
-                </div>
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Queue actual</p>
-                  <p className="mt-1 text-foreground">{queue.name}</p>
-                </div>
-                <div className="app-panel-inset px-3 py-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Origen</p>
-                  <p className="mt-1 text-foreground">{detail.originalQueue ?? detail.originalAddress ?? "-"}</p>
-                </div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.hour}</p><p className="mt-1 text-foreground">{renderTimestamp(detail.timestamp)}</p></div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.size}</p><p className="mt-1 text-foreground">{detail.size !== null ? numberFormatter.format(detail.size) : "-"}</p></div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.priority}</p><p className="mt-1 text-foreground">{detail.priority ?? "-"}</p></div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.brokerId}</p><p className="mt-1 text-foreground">{detail.brokerMessageId ?? "-"}</p></div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.currentQueue}</p><p className="mt-1 text-foreground">{queue.name}</p></div>
+                <div className="app-panel-inset px-3 py-2"><p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{messages.explorer.detail.origin}</p><p className="mt-1 text-foreground">{detail.originalQueue ?? detail.originalAddress ?? "-"}</p></div>
               </div>
             </section>
 
-            <DetailSection title={`Body (${formattedBody.label})`}>
+            <DetailSection title={`${messages.explorer.detail.body} (${formattedBody.label})`}>
               <div className="app-panel-inset overflow-x-auto p-3">
-                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-foreground/90">
-                  {formattedBody.content}
-                </pre>
+                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-foreground/90">{formattedBody.content}</pre>
               </div>
             </DetailSection>
 
-            <DetailSection title="Headers">
-              <KeyValueGrid entries={Object.entries(detail.headers)} />
+            <DetailSection title={messages.explorer.detail.headers}>
+              <KeyValueGrid entries={Object.entries(detail.headers)} emptyLabel={messages.explorer.detail.noData} />
             </DetailSection>
 
-            <DetailSection title="Properties">
-              <KeyValueGrid entries={Object.entries(detail.properties)} />
+            <DetailSection title={messages.explorer.detail.properties}>
+              <KeyValueGrid entries={Object.entries(detail.properties)} emptyLabel={messages.explorer.detail.noData} />
             </DetailSection>
           </>
         ) : null}

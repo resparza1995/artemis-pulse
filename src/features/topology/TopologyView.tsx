@@ -1,7 +1,9 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+﻿import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { TopologyGraph, TopologyNode, TopologyResponse } from "./types";
+import { getClientLocale, getMessages, type Locale } from "../../i18n";
+import { I18nProvider, useI18n } from "../../i18n/react";
 import { Input } from "../../ui/input";
 import { TopologyCanvas } from "./TopologyCanvas";
 import { TopologyDetailPanel } from "./TopologyDetailPanel";
@@ -10,6 +12,7 @@ import { TopologyToolbar } from "./TopologyToolbar";
 
 type TopologyViewProps = {
   pollIntervalMs: number;
+  locale: Locale;
 };
 
 type TopologyViewContentProps = TopologyViewProps;
@@ -42,12 +45,12 @@ async function fetchTopology() {
     const message =
       payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string"
         ? payload.message
-        : "No se pudo cargar la topologia.";
+        : getMessages(getClientLocale()).topology.fetchError;
     throw new Error(message);
   }
 
   if (!payload || typeof payload !== "object" || !("graph" in payload)) {
-    throw new Error("La API de topologia devolvio un formato no esperado.");
+    throw new Error(getMessages(getClientLocale()).topology.invalidResponse);
   }
 
   return payload as TopologyResponse;
@@ -212,6 +215,7 @@ function filterGraph(
 }
 
 function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
+  const { messages } = useI18n();
   const initialUiState = useMemo(() => readInitialUiState(), []);
   const [search, setSearch] = useState(initialUiState.search);
   const [showConsumers, setShowConsumers] = useState(initialUiState.showConsumers);
@@ -354,13 +358,13 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
         {addressNodes.length > 0 ? (
           <details className="app-panel-soft relative rounded-2xl px-3 py-2">
             <summary className="list-none cursor-pointer text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Addresses ({addressNodes.length}) · Colapsadas ({collapsedAddressIds.size})
+              {messages.topology.addresses} ({addressNodes.length}) · {messages.topology.collapsed} ({collapsedAddressIds.size})
             </summary>
             <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-[360px] max-w-[90vw] rounded-2xl border border-[var(--border)] bg-[var(--surface-overlay)] p-3 shadow-[var(--shadow-overlay)]">
               <Input
                 value={addressSearch}
                 onChange={(event) => setAddressSearch(event.target.value)}
-                placeholder="Buscar address..."
+                placeholder={messages.topology.searchAddressPlaceholder}
                 className="h-10"
               />
               <div className="mt-2 flex items-center gap-2">
@@ -371,7 +375,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
                     setCollapsedAddressIds(new Set());
                   }}
                 >
-                  Mostrar todas
+                  {messages.common.showAll}
                 </button>
                 <button
                   type="button"
@@ -386,7 +390,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
                     });
                   }}
                 >
-                  Colapsar filtradas
+                  {messages.topology.collapseFiltered}
                 </button>
               </div>
 
@@ -437,7 +441,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
                   })}
                 </div>
                 {filteredAddressNodes.length === 0 ? (
-                  <p className="text-center text-xs text-muted-foreground">Sin coincidencias.</p>
+                  <p className="text-center text-xs text-muted-foreground">{messages.common.noMatches}</p>
                 ) : null}
               </div>
             </div>
@@ -446,9 +450,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
       </div>
 
       {topologyQuery.isLoading ? (
-        <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-          Cargando topologia real del broker...
-        </div>
+        <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">{messages.topology.loading}</div>
       ) : null}
 
       {topologyQuery.isError ? (
@@ -458,9 +460,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
       ) : null}
 
       {!topologyQuery.isLoading && !topologyQuery.isError && filteredGraph.nodes.length === 0 ? (
-        <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-          No hay nodos que coincidan con los filtros activos.
-        </div>
+        <div className="app-empty-state flex min-h-0 flex-1 items-center justify-center p-6 text-sm text-muted-foreground">{messages.topology.empty}</div>
       ) : null}
 
       {!topologyQuery.isLoading && !topologyQuery.isError && filteredGraph.nodes.length > 0 ? (
@@ -498,8 +498,13 @@ export default function TopologyView(props: TopologyViewProps) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TopologyViewContent {...props} />
-    </QueryClientProvider>
+    <I18nProvider locale={props.locale}>
+      <QueryClientProvider client={queryClient}>
+        <TopologyViewContent {...props} />
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
+
+
+

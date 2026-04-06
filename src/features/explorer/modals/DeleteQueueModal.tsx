@@ -1,4 +1,5 @@
-import type { QueueSummary } from "../../../types/queues";
+﻿import type { QueueSummary } from "../../../types/queues";
+import { useI18n } from "../../../i18n/react";
 import { Button } from "../../../ui/button";
 import { Modal } from "../../../ui/modal";
 
@@ -11,64 +12,27 @@ type DeleteQueueModalProps = {
   errorMessage?: string;
 };
 
-export function DeleteQueueModal({
-  open,
-  queue,
-  onClose,
-  onConfirm,
-  isPending,
-  errorMessage,
-}: DeleteQueueModalProps) {
+export function DeleteQueueModal({ open, queue, onClose, onConfirm, isPending, errorMessage }: DeleteQueueModalProps) {
+  const { messages } = useI18n();
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Eliminar queue"
-      description={
-        queue
-          ? `Se eliminara la queue ${queue.name}. La address ${queue.address} se conserva.`
-          : "Selecciona una queue para poder eliminarla."
-      }
-      footer={
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => void onConfirm()}
-            disabled={isPending || !queue}
-          >
-            {isPending ? "Eliminando..." : "Eliminar queue"}
-          </Button>
-        </div>
-      }
+      title={messages.explorer.modals.deleteQueue.title}
+      description={queue ? `${queue.name}. ${messages.explorer.modals.deleteQueue.descriptionSelected}` : messages.explorer.modals.deleteQueue.descriptionEmpty}
+      footer={<div className="flex flex-wrap items-center justify-end gap-3"><Button type="button" variant="ghost" onClick={onClose}>{messages.common.cancel}</Button><Button type="button" variant="destructive" onClick={() => void onConfirm()} disabled={isPending || !queue}>{isPending ? messages.explorer.modals.deleteQueue.pending : messages.explorer.modals.deleteQueue.button}</Button></div>}
     >
       <div className="space-y-4">
-        <div className="app-notice app-notice-warning text-sm">
-          Esta accion elimina la queue del broker. Si todavia quedan mensajes, tambien desapareceran con la queue.
-        </div>
-
+        <div className="app-notice app-notice-warning text-sm">{messages.explorer.modals.deleteQueue.warning}</div>
         {queue ? (
           <div className="app-notice app-notice-neutral text-sm">
-            <div>
-              Queue: <span className="font-medium text-foreground">{queue.name}</span>
-            </div>
-            <div>
-              Address: <span className="font-medium text-foreground">{queue.address}</span>
-            </div>
-            <div>
-              Mensajes pendientes: <span className="font-medium text-foreground">{queue.messageCount}</span>
-            </div>
+            <div>{messages.explorer.modals.deleteQueue.queue}: <span className="font-medium text-foreground">{queue.name}</span></div>
+            <div>{messages.explorer.modals.deleteQueue.address}: <span className="font-medium text-foreground">{queue.address}</span></div>
+            <div>{messages.explorer.modals.deleteQueue.pendingMessages}: <span className="font-medium text-foreground">{queue.messageCount}</span></div>
           </div>
         ) : null}
-
-        {errorMessage ? (
-          <div className="app-notice app-notice-critical text-sm">
-            {errorMessage}
-          </div>
-        ) : null}
+        {errorMessage ? <div className="app-notice app-notice-critical text-sm">{errorMessage}</div> : null}
       </div>
     </Modal>
   );

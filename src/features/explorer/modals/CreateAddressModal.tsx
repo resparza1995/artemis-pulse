@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from "react";
+import { useI18n } from "../../../i18n/react";
 import { Button } from "../../../ui/button";
 import { Dropdown } from "../../../ui/dropdown";
 import { Input } from "../../../ui/input";
@@ -26,6 +27,7 @@ export function CreateAddressModal({
   isPending,
   errorMessage,
 }: CreateAddressModalProps) {
+  const { messages } = useI18n();
   const [address, setAddress] = useState(initialAddress ?? "");
   const [routingType, setRoutingType] = useState<"ANYCAST" | "MULTICAST">("ANYCAST");
 
@@ -40,24 +42,24 @@ export function CreateAddressModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Nueva address"
-      description="Crea una address independiente para preparar pruebas."
+      title={messages.explorer.modals.createAddress.title}
+      description={messages.explorer.modals.createAddress.description}
       className="max-w-3xl min-h-[34rem]"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             {onBack ? (
               <Button type="button" variant="ghost" onClick={onBack} disabled={isPending}>
-                Atras
+                {messages.common.back}
               </Button>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
-              Cancelar
+              {messages.common.cancel}
             </Button>
             <Button type="submit" form="create-address-form" disabled={isPending}>
-              {isPending ? "Creando..." : "Crear address"}
+              {isPending ? messages.explorer.modals.createAddress.pending : messages.explorer.modals.createAddress.button}
             </Button>
           </div>
         </div>
@@ -72,7 +74,7 @@ export function CreateAddressModal({
         }}
       >
         <label className="space-y-2 text-sm text-foreground">
-          <span>Address</span>
+          <span>{messages.explorer.modals.createAddress.address}</span>
           <Input
             value={address}
             onChange={(event) => setAddress(event.target.value)}
@@ -82,7 +84,7 @@ export function CreateAddressModal({
         </label>
 
         <label className="space-y-2 text-sm text-foreground">
-          <span>Routing type</span>
+          <span>{messages.explorer.modals.createAddress.routingType}</span>
           <Dropdown
             value={routingType}
             onChange={(value) => setRoutingType(value as "ANYCAST" | "MULTICAST")}
@@ -90,11 +92,7 @@ export function CreateAddressModal({
           />
         </label>
 
-        {errorMessage ? (
-          <div className="app-notice app-notice-critical text-sm">
-            {errorMessage}
-          </div>
-        ) : null}
+        {errorMessage ? <div className="app-notice app-notice-critical text-sm">{errorMessage}</div> : null}
       </form>
     </Modal>
   );

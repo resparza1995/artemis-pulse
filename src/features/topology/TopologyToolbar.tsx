@@ -1,4 +1,5 @@
 import { Filter } from "lucide-react";
+import { useI18n } from "../../i18n/react";
 import { Input } from "../../ui/input";
 
 type TopologyToolbarProps = {
@@ -22,12 +23,14 @@ export function TopologyToolbar({
   onToggleDlq,
   onToggleOnlyProblems,
 }: TopologyToolbarProps) {
+  const { messages } = useI18n();
+
   return (
     <section className="app-panel-muted flex flex-none flex-wrap items-center gap-3 px-4 py-3">
       <div className="mr-2 flex items-center gap-2">
         <Filter className="h-4 w-4 text-primary" />
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Filtros
+          {messages.topology.filters}
         </span>
       </div>
 
@@ -35,7 +38,7 @@ export function TopologyToolbar({
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Buscar por id o nombre..."
+          placeholder={messages.topology.searchPlaceholder}
           className="h-10"
         />
       </div>
@@ -47,7 +50,7 @@ export function TopologyToolbar({
           checked={showConsumers}
           onChange={(event) => onToggleConsumers(event.target.checked)}
         />
-        Mostrar consumers
+        {messages.topology.showConsumers}
       </label>
 
       <label className="app-toggle-shell inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
@@ -57,7 +60,7 @@ export function TopologyToolbar({
           checked={showDlq}
           onChange={(event) => onToggleDlq(event.target.checked)}
         />
-        Mostrar DLQ
+        {messages.topology.showDlq}
       </label>
 
       <label className="app-toggle-shell inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
@@ -67,7 +70,7 @@ export function TopologyToolbar({
           checked={onlyProblems}
           onChange={(event) => onToggleOnlyProblems(event.target.checked)}
         />
-        Solo problemas
+        {messages.topology.onlyProblems}
       </label>
     </section>
   );

@@ -1,4 +1,5 @@
-import type { APIRoute } from "astro";
+﻿import type { APIRoute } from "astro";
+import { getLocaleFromRequest, getMessages } from "../../i18n";
 import { createQueue, listQueues } from "../../lib/artemis";
 import { JolokiaRequestError } from "../../lib/jolokia";
 
@@ -9,7 +10,18 @@ type CreateQueuePayload = {
   durable?: boolean;
 };
 
-export const GET: APIRoute = async () => {
+function resolveMessages(request: Request) {
+  return getMessages(
+    getLocaleFromRequest({
+      cookie: request.headers.get("cookie"),
+      acceptLanguage: request.headers.get("accept-language"),
+    }),
+  );
+}
+
+export const GET: APIRoute = async ({ request }) => {
+  const messages = resolveMessages(request);
+
   try {
     const queues = await listQueues();
 
@@ -26,7 +38,7 @@ export const GET: APIRoute = async () => {
     return new Response(
       JSON.stringify({
         error: "QUEUE_FETCH_FAILED",
-        message: "No se pudieron obtener las colas.",
+        message: messages.explorer.sidebar.fetchError,
       }),
       {
         status: 502,
@@ -40,6 +52,7 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const messages = resolveMessages(request);
   let payload: CreateQueuePayload;
 
   try {
@@ -48,7 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         error: "INVALID_QUEUE_PAYLOAD",
-        message: "El body de la solicitud no es JSON valido.",
+        message: messages.explorer.view.backendInvalid,
       }),
       {
         status: 400,
@@ -80,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
     const message =
       error instanceof Error
         ? error.message
-        : "No se pudo crear la cola solicitada.";
+        : messages.explorer.modals.createQueue.pending;
 
     return new Response(
       JSON.stringify({

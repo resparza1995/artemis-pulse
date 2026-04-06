@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, Search, Settings2 } from "lucide-react";
 import type { QueueSummary } from "../../types/queues";
+import { useI18n } from "../../i18n/react";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -40,19 +41,20 @@ export function ExplorerSidebar({
   errorMessage,
   onOpenAdmin,
 }: ExplorerSidebarProps) {
+  const { messages } = useI18n();
   const totalQueues = groups.reduce((total, group) => total + group.queues.length, 0);
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="flex-none gap-3 border-b border-[color:var(--border)] pb-4">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>Queues</CardTitle>
-          <Badge variant="neutral">{numberFormatter.format(totalQueues)} visibles</Badge>
+          <CardTitle>{messages.explorer.sidebar.title}</CardTitle>
+          <Badge variant="neutral">{numberFormatter.format(totalQueues)} {messages.explorer.sidebar.visible}</Badge>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" className="px-3" onClick={onOpenAdmin}>
             <Settings2 className="h-4 w-4" />
-            Gestion
+            {messages.explorer.sidebar.manage}
           </Button>
         </div>
         <label className="relative block">
@@ -61,24 +63,24 @@ export function ExplorerSidebar({
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             className="pl-11"
-            placeholder="Buscar queue o address"
+            placeholder={messages.explorer.sidebar.searchPlaceholder}
           />
         </label>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-hidden px-0 pb-0">
         {isLoading ? (
-          <div className="px-5 py-6 text-sm text-muted-foreground">Cargando queues...</div>
+          <div className="px-5 py-6 text-sm text-muted-foreground">{messages.explorer.sidebar.loading}</div>
         ) : null}
 
         {isError ? (
           <div className="app-notice app-notice-critical mx-5 text-sm">
-            {errorMessage ?? "No se pudieron obtener las queues del broker."}
+            {errorMessage ?? messages.explorer.sidebar.fetchError}
           </div>
         ) : null}
 
         {!isLoading && !isError && groups.length === 0 ? (
           <div className="px-5 py-6 text-sm text-muted-foreground">
-            No hay queues que coincidan con la busqueda actual.
+            {messages.explorer.sidebar.noMatches}
           </div>
         ) : null}
 
@@ -130,7 +132,7 @@ export function ExplorerSidebar({
                                 <div className="flex flex-wrap items-center gap-2">
                                   {queue.isDlq ? <Badge variant="outline">DLQ</Badge> : null}
                                   <span className="text-xs text-muted-foreground">
-                                    {numberFormatter.format(queue.messageCount)} mensajes
+                                    {numberFormatter.format(queue.messageCount)} {messages.explorer.sidebar.messages}
                                   </span>
                                 </div>
                               </div>

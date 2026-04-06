@@ -1,20 +1,23 @@
----
+﻿---
 import QueueDashboard from "../features/pulse/QueueDashboard";
 import MainLayout from "../layouts/MainLayout.astro";
 import { getBrokerLabel, getServerConfig } from "../lib/config";
+import { getLocaleFromRequest, getMessages } from "../i18n";
 
 const { pollIntervalMs } = getServerConfig();
 const brokerLabel = getBrokerLabel();
+const locale = getLocaleFromRequest({
+  cookie: Astro.request.headers.get("cookie"),
+  acceptLanguage: Astro.request.headers.get("accept-language"),
+});
+const m = getMessages(locale);
 ---
 
 <MainLayout
-  pageTitle="Pulse"
-  pageDescription="Resumen general del broker y de las queues para detectar backlog, DLQ y colas criticas."
+  pageTitle={m.layout.pages.pulseTitle}
+  pageDescription={m.layout.pages.pulseDescription}
   brokerLabel={brokerLabel}
+  locale={locale}
 >
-  <QueueDashboard
-    client:load
-    pollIntervalMs={pollIntervalMs}
-    brokerLabel={brokerLabel}
-  />
+  <QueueDashboard client:load pollIntervalMs={pollIntervalMs} brokerLabel={brokerLabel} locale={locale} />
 </MainLayout>

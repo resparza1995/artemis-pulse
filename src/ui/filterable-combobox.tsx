@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useI18n } from "../i18n/react";
 import { Input } from "./input";
 
 type FilterableComboboxProps = {
@@ -19,6 +20,7 @@ export function FilterableCombobox({
   disabled,
   autoFocus,
 }: FilterableComboboxProps) {
+  const { messages } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -91,7 +93,7 @@ export function FilterableCombobox({
               ))
             ) : (
               <div className="px-3 py-2 text-sm text-muted-foreground">
-                Sin coincidencias.
+                {messages.common.noMatches}
               </div>
             )}
           </div>

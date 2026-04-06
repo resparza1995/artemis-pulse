@@ -1,16 +1,23 @@
----
+﻿---
 import ExplorerView from "../features/explorer/ExplorerView";
 import MainLayout from "../layouts/MainLayout.astro";
 import { getBrokerLabel } from "../lib/config";
+import { getLocaleFromRequest, getMessages } from "../i18n";
 
 const brokerLabel = getBrokerLabel();
+const locale = getLocaleFromRequest({
+  cookie: Astro.request.headers.get("cookie"),
+  acceptLanguage: Astro.request.headers.get("accept-language"),
+});
+const m = getMessages(locale);
 ---
 
 <MainLayout
-  title="Explorer | Artemis Pulse"
-  pageTitle="Explorer"
-  pageDescription="Lectura de queues y mensajes para debugging diario."
+  title={`${m.layout.pages.explorerTitle} | Artemis Pulse`}
+  pageTitle={m.layout.pages.explorerTitle}
+  pageDescription={m.layout.pages.explorerDescription}
   brokerLabel={brokerLabel}
+  locale={locale}
 >
-  <ExplorerView client:load brokerLabel={brokerLabel} />
+  <ExplorerView client:load brokerLabel={brokerLabel} locale={locale} />
 </MainLayout>

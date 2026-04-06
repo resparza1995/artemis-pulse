@@ -1,51 +1,51 @@
 ﻿# Artemis Pulse
 
-Artemis Pulse es una consola web para operar e inspeccionar brokers de ActiveMQ Artemis desde una interfaz construida con Astro, React y Tailwind CSS.
+Artemis Pulse is a web app for managing and inspecting Artemis ActiveMQ brokers via an interface built using Astro, React and Tailwind CSS.
 
-La app se organiza alrededor de tres vistas:
-- `Pulse`: resumen operativo del broker.
-- `Explorer`: trabajo diario sobre addresses, queues y mensajes.
-- `Topology`: mapa visual del broker y sus relaciones.
+The app is organised around three views:
+- `Pulse`: an operational overview of the broker.
+- `Explorer`: day-to-day management of addresses, queues and messages.
+- `Topology`: a visual map of the broker and its relationships.
 
-## Arranque local
+## Local startup
 
-1. Instala dependencias:
+1. Install dependencies:
 
 ```bash
 bun install
 ```
 
-2. Arranca la app:
+2. Start the app:
 
 ```bash
 bun run dev
 ```
 
-La app queda disponible en `http://localhost:4321`.
+The app is available at `http://localhost:4321`.
 
-En el primer arranque la app usa valores por defecto internos. Desde el icono de `Settings` del header puedes configurar la conexion a Artemis y esos datos se persistiran en `data/settings.json`.
+On first launch, the app uses internal default values. From the `Settings` icon in the header, you can configure the connection to Artemis and this data will be persisted in `data/settings.json`.
 
 ## Docker Compose
 
-El repositorio incluye `docker-compose.yml` para levantar:
+The repository includes `docker-compose.yml` to start:
 - `artemis`
 - `app`
 
-El servicio `app` monta un volumen en `/app/data` para conservar `settings.json` entre reinicios.
+The `app` service mounts a volume at `/app/data` to preserve `settings.json` across restarts.
 
-Arranque:
+Start:
 
 ```bash
 docker compose up --build
 ```
 
-## Scripts utiles
+## Useful scripts
 
-- `bun run dev`: entorno de desarrollo local.
-- `bun run check`: validacion de tipos con Astro.
-- `bun test`: pruebas unitarias.
+- `bun run dev`: local development environment.
+- `bun run check`: type validation with Astro.
+- `bun test`: unit tests.
 
-## Documentacion
+## Documentation
 
-- [Arquitectura](docs/arquitectura.md)
-- [Funcionalidades](docs/funcionalidades.md)
+- [Architecture](docs/architecture.md)
+- [Features](docs/features.md)

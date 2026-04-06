@@ -1,6 +1,8 @@
----
+﻿---
 import { ClientRouter } from "astro:transitions";
+import { getMessages, type Locale } from "../i18n";
 import { HeaderSettingsButton } from "../features/settings/HeaderSettingsButton";
+import { LanguageSwitcher } from "../features/settings/LanguageSwitcher";
 import { Toaster } from "../ui/toaster";
 import "../styles/global.css";
 
@@ -10,6 +12,7 @@ type Props = {
   pageTitle?: string;
   pageDescription?: string;
   brokerLabel?: string;
+  locale: Locale;
 };
 
 const {
@@ -18,18 +21,20 @@ const {
   pageTitle,
   pageDescription,
   brokerLabel,
+  locale,
 } = Astro.props;
 const pathname = Astro.url.pathname;
+const m = getMessages(locale);
 
 const navItems = [
-  { href: "/", label: "Pulse" },
-  { href: "/explorer", label: "Explorer" },
-  { href: "/topology", label: "Topology" },
+  { href: "/", label: m.layout.nav.pulse },
+  { href: "/explorer", label: m.layout.nav.explorer },
+  { href: "/topology", label: m.layout.nav.topology },
 ];
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -46,47 +51,36 @@ const navItems = [
         <header class="app-header-divider mb-3 flex-none py-2 sm:mb-4 sm:py-3">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
-              <p
-                title={pageDescription ?? ""}
-                class="cursor-help text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/85"
-              >
-                Artemis Pulse
+              <p title={pageDescription ?? ""} class="cursor-help text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/85">
+                {m.layout.appName}
               </p>
               <span class="text-[10px] font-semibold text-muted-foreground">|</span>
-              <h1
-                class="font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-                transition:name="page-title"
-              >
-                {pageTitle ?? "Explorer"}
+              <h1 class="font-display text-xl font-semibold tracking-tight text-foreground sm:text-2xl" transition:name="page-title">
+                {pageTitle ?? m.layout.nav.explorer}
               </h1>
             </div>
 
             <div class="flex items-center gap-2">
               {brokerLabel ? (
                 <span class="app-panel-muted inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  broker {brokerLabel}
+                  {m.layout.broker} {brokerLabel}
                 </span>
               ) : null}
+
+              <LanguageSwitcher client:load locale={locale} languageLabel={m.layout.languageLabel} />
 
               <nav class="app-nav-shell flex items-center gap-1 rounded-full p-1">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
-
                   return (
-                    <a
-                      href={item.href}
-                      class:list={[
-                        "app-nav-item rounded-full px-3 py-1 text-xs font-medium transition duration-200",
-                        isActive && "app-nav-item-active",
-                      ]}
-                    >
+                    <a href={item.href} class:list={["app-nav-item rounded-full px-3 py-1 text-xs font-medium transition duration-200", isActive && "app-nav-item-active"]}>
                       {item.label}
                     </a>
                   );
                 })}
               </nav>
 
-              <HeaderSettingsButton client:load />
+              <HeaderSettingsButton client:load locale={locale} />
             </div>
           </div>
         </header>
@@ -99,3 +93,4 @@ const navItems = [
     <Toaster client:load />
   </body>
 </html>
+

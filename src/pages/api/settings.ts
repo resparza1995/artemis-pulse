@@ -1,8 +1,20 @@
-import type { APIRoute } from "astro";
+﻿import type { APIRoute } from "astro";
+import { getLocaleFromRequest, getMessages } from "../../i18n";
 import { getResolvedAppSettings, saveAppSettings } from "../../lib/settings-store";
 import type { AppSettings } from "../../types/settings";
 
-export const GET: APIRoute = async () => {
+function resolveMessages(request: Request) {
+  return getMessages(
+    getLocaleFromRequest({
+      cookie: request.headers.get("cookie"),
+      acceptLanguage: request.headers.get("accept-language"),
+    }),
+  );
+}
+
+export const GET: APIRoute = async ({ request }) => {
+  const messages = resolveMessages(request);
+
   try {
     const payload = getResolvedAppSettings();
 
@@ -17,7 +29,7 @@ export const GET: APIRoute = async () => {
     return new Response(
       JSON.stringify({
         error: "SETTINGS_FETCH_FAILED",
-        message: error instanceof Error ? error.message : "No se pudieron cargar los settings.",
+        message: error instanceof Error ? error.message : messages.settings.fetchError,
       }),
       {
         status: 500,
@@ -31,6 +43,7 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const messages = resolveMessages(request);
   let payload: Partial<AppSettings> = {};
 
   try {
@@ -39,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         error: "INVALID_SETTINGS_PAYLOAD",
-        message: "El body de la solicitud no es JSON valido.",
+        message: messages.explorer.view.backendInvalid,
       }),
       {
         status: 400,
@@ -65,7 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(
       JSON.stringify({
         error: "SETTINGS_SAVE_FAILED",
-        message: error instanceof Error ? error.message : "No se pudieron guardar los settings.",
+        message: error instanceof Error ? error.message : messages.settings.saveError,
       }),
       {
         status: 500,

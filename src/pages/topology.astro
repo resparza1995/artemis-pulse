@@ -1,17 +1,24 @@
----
+﻿---
 import TopologyView from "../features/topology/TopologyView";
 import MainLayout from "../layouts/MainLayout.astro";
 import { getBrokerLabel, getServerConfig } from "../lib/config";
+import { getLocaleFromRequest, getMessages } from "../i18n";
 
 const { pollIntervalMs } = getServerConfig();
 const brokerLabel = getBrokerLabel();
+const locale = getLocaleFromRequest({
+  cookie: Astro.request.headers.get("cookie"),
+  acceptLanguage: Astro.request.headers.get("accept-language"),
+});
+const m = getMessages(locale);
 ---
 
 <MainLayout
-  title="Topology | Artemis Pulse"
-  pageTitle="Topology"
-  pageDescription="Mapa visual de relaciones broker, addresses, queues y consumers."
+  title={`${m.layout.pages.topologyTitle} | Artemis Pulse`}
+  pageTitle={m.layout.pages.topologyTitle}
+  pageDescription={m.layout.pages.topologyDescription}
   brokerLabel={brokerLabel}
+  locale={locale}
 >
-  <TopologyView client:load pollIntervalMs={pollIntervalMs} />
+  <TopologyView client:load pollIntervalMs={pollIntervalMs} locale={locale} />
 </MainLayout>

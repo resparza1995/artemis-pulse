@@ -1,15 +1,8 @@
-import {
-  Activity,
-  AlertOctagon,
-  DatabaseZap,
-  Server,
-} from "lucide-react";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from "@tanstack/react-query";
+﻿import { Activity, AlertOctagon, DatabaseZap, Server } from "lucide-react";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { getClientLocale, getIntlLocale, getMessages, type Locale } from "../../i18n";
+import { I18nProvider, useI18n } from "../../i18n/react";
 import type { BrokerMetrics, QueueSummary } from "../../types/queues";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
@@ -20,106 +13,46 @@ import { StatsCard } from "./StatsCard";
 type QueueDashboardProps = {
   pollIntervalMs: number;
   brokerLabel: string;
+  locale: Locale;
 };
 
-type QueueApiError = {
-  message?: string;
-};
+type QueueApiError = { message?: string };
 
 function getApiErrorMessage(payload: unknown) {
-  return payload &&
-    typeof payload === "object" &&
-    "message" in payload &&
-    typeof payload.message === "string"
-    ? payload.message
-    : null;
+  return payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string" ? payload.message : null;
 }
 
 async function fetchQueues() {
-  const response = await fetch("/api/queues", {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
+  const response = await fetch("/api/queues", { headers: { Accept: "application/json" } });
   let payload: QueueSummary[] | QueueApiError | null = null;
-
-  try {
-    payload = (await response.json()) as QueueSummary[] | QueueApiError;
-  } catch {
-    payload = null;
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      getApiErrorMessage(payload) ||
-        "No se pudieron obtener las colas.",
-    );
-  }
-
-  if (!Array.isArray(payload)) {
-    throw new Error("La respuesta del backend no tiene el formato esperado.");
-  }
-
+  try { payload = (await response.json()) as QueueSummary[] | QueueApiError; } catch { payload = null; }
+  if (!response.ok) throw new Error(getApiErrorMessage(payload) || getMessages(getClientLocale()).explorer.sidebar.fetchError);
+  if (!Array.isArray(payload)) throw new Error(getMessages(getClientLocale()).explorer.view.queueResponseInvalid);
   return payload;
 }
 
 async function fetchBrokerMetrics() {
-  const response = await fetch("/api/broker/metrics", {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
+  const response = await fetch("/api/broker/metrics", { headers: { Accept: "application/json" } });
   let payload: BrokerMetrics | { error?: string; message?: string } | null = null;
-
-  try {
-    payload = (await response.json()) as BrokerMetrics | { error?: string; message?: string };
-  } catch {
-    payload = null;
-  }
-
+  try { payload = (await response.json()) as BrokerMetrics | { error?: string; message?: string }; } catch { payload = null; }
   if (!response.ok) {
-    const message =
-      payload && typeof (payload as { message?: string }).message === "string"
-        ? (payload as { message?: string }).message
-        : "No se pudieron obtener las metricas del broker.";
-
+    const message = payload && typeof (payload as { message?: string }).message === "string" ? (payload as { message?: string }).message : getMessages(getClientLocale()).pulse.disconnected;
     throw new Error(message);
   }
-
-  if (!payload || typeof (payload as BrokerMetrics).cpuUsage !== "number") {
-    throw new Error("La respuesta del backend no tiene el formato esperado para metricas del broker.");
-  }
-
+  if (!payload || typeof (payload as BrokerMetrics).cpuUsage !== "number") throw new Error(getMessages(getClientLocale()).explorer.view.backendInvalid);
   return payload as BrokerMetrics;
 }
 
-function QueueDashboardContent({
-  pollIntervalMs,
-  brokerLabel,
-}: QueueDashboardProps) {
+function QueueDashboardContent({ pollIntervalMs, brokerLabel, locale }: Omit<QueueDashboardProps, "locale"> & { locale: Locale }) {
+  const { messages } = useI18n();
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const intlLocale = getIntlLocale(locale);
 
-  const queuesQuery = useQuery({
-    queryKey: ["queues"],
-    queryFn: fetchQueues,
-    refetchInterval: pollIntervalMs,
-    refetchIntervalInBackground: true,
-    retry: 1,
-  });
-
-  const brokerMetricsQuery = useQuery({
-    queryKey: ["brokerMetrics"],
-    queryFn: fetchBrokerMetrics,
-    refetchInterval: pollIntervalMs,
-    refetchIntervalInBackground: true,
-    retry: 1,
-  });
+  const queuesQuery = useQuery({ queryKey: ["queues"], queryFn: fetchQueues, refetchInterval: pollIntervalMs, refetchIntervalInBackground: true, retry: 1 });
+  const brokerMetricsQuery = useQuery({ queryKey: ["brokerMetrics"], queryFn: fetchBrokerMetrics, refetchInterval: pollIntervalMs, refetchIntervalInBackground: true, retry: 1 });
 
   const queues = queuesQuery.data ?? [];
   const metrics = brokerMetricsQuery.data;
-
   const totalQueues = queues.length;
   const totalMessages = queues.reduce((sum, queue) => sum + queue.messageCount, 0);
   const backlogQueues = queues.filter((queue) => queue.messageCount > 0).length;
@@ -127,38 +60,19 @@ function QueueDashboardContent({
   const criticalQueues = queues.filter((queue) => queue.status === "critical").length;
   const warningQueues = queues.filter((queue) => queue.status === "warning").length;
   const isConnected = !queuesQuery.isError && !brokerMetricsQuery.isError;
+  const queuesToReview = [...queues].filter((queue) => queue.messageCount > 0 || queue.status !== "healthy").sort((left, right) => {
+    const statusWeight = { critical: 2, warning: 1, healthy: 0 };
+    const leftWeight = statusWeight[left.status];
+    const rightWeight = statusWeight[right.status];
+    if (leftWeight !== rightWeight) return rightWeight - leftWeight;
+    return right.messageCount - left.messageCount;
+  }).slice(0, 10);
 
-  const queuesToReview = [...queues]
-    .filter((queue) => queue.messageCount > 0 || queue.status !== "healthy")
-    .sort((left, right) => {
-      const statusWeight = { critical: 2, warning: 1, healthy: 0 };
-      const leftWeight = statusWeight[left.status];
-      const rightWeight = statusWeight[right.status];
-
-      if (leftWeight !== rightWeight) {
-        return rightWeight - leftWeight;
-      }
-
-      return right.messageCount - left.messageCount;
-    })
-    .slice(0, 10);
-
-  const lastUpdatedLabel = queuesQuery.dataUpdatedAt
-    ? new Intl.DateTimeFormat("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date(queuesQuery.dataUpdatedAt))
-    : "sin datos";
+  const lastUpdatedLabel = queuesQuery.dataUpdatedAt ? new Intl.DateTimeFormat(intlLocale, { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(queuesQuery.dataUpdatedAt)) : messages.pulse.noData;
 
   async function handleManualRefresh() {
     setIsManualRefreshing(true);
-
-    try {
-      await Promise.all([queuesQuery.refetch(), brokerMetricsQuery.refetch()]);
-    } finally {
-      setIsManualRefreshing(false);
-    }
+    try { await Promise.all([queuesQuery.refetch(), brokerMetricsQuery.refetch()]); } finally { setIsManualRefreshing(false); }
   }
 
   return (
@@ -167,87 +81,32 @@ function QueueDashboardContent({
         <CardHeader className="gap-2 px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <Badge variant="neutral">broker {brokerLabel}</Badge>
+              <Badge variant="neutral">{messages.layout.broker} {brokerLabel}</Badge>
               <Badge variant="neutral">poll {pollIntervalMs} ms</Badge>
-              <Badge variant={isConnected ? "success" : "critical"}>
-                {isConnected ? "Conectado" : "Sin conexion"}
-              </Badge>
-              <span className="text-xs text-muted-foreground">Ultima actualizacion: {lastUpdatedLabel}</span>
+              <Badge variant={isConnected ? "success" : "critical"}>{isConnected ? messages.pulse.connected : messages.pulse.disconnected}</Badge>
+              <span className="text-xs text-muted-foreground">{messages.pulse.lastUpdated}: {lastUpdatedLabel}</span>
             </div>
-
-            <Button
-              variant="secondary"
-              className="min-w-28"
-              onClick={() => {
-                void handleManualRefresh();
-              }}
-              disabled={isManualRefreshing}
-            >
-              {isManualRefreshing ? "Actualizando" : "Refrescar"}
+            <Button variant="secondary" className="min-w-28" onClick={() => void handleManualRefresh()} disabled={isManualRefreshing}>
+              {isManualRefreshing ? messages.common.refreshing : messages.common.refresh}
             </Button>
           </div>
-
-          {queuesQuery.isError ? (
-            <span className="text-xs text-[var(--critical)]">{queuesQuery.error.message}</span>
-          ) : null}
-          {!queuesQuery.isError && brokerMetricsQuery.isError ? (
-            <span className="text-xs text-[var(--critical)]">{brokerMetricsQuery.error.message}</span>
-          ) : null}
+          {queuesQuery.isError ? <span className="text-xs text-[var(--critical)]">{queuesQuery.error.message}</span> : null}
+          {!queuesQuery.isError && brokerMetricsQuery.isError ? <span className="text-xs text-[var(--critical)]">{brokerMetricsQuery.error.message}</span> : null}
         </CardHeader>
       </Card>
 
       <section className="grid flex-none gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StatsCard
-          label="CPU"
-          value={metrics ? `${metrics.cpuUsage}%` : (brokerMetricsQuery.isLoading ? "cargando..." : "-")}
-          hint="uso aproximado de CPU"
-          icon={Server}
-        />
-        <StatsCard
-          label="Memoria"
-          value={metrics ? `${metrics.memoryUsage}%` : (brokerMetricsQuery.isLoading ? "cargando..." : "-")}
-          hint="uso de heap JVM"
-          icon={DatabaseZap}
-        />
-        <StatsCard
-          label="Mensajes totales"
-          value={metrics ? String(metrics.totalMessages) : String(totalMessages)}
-          hint="todos los mensajes en colas"
-          icon={Activity}
-        />
-        <StatsCard
-          label="Colas"
-          value={metrics ? String(metrics.queueCount) : String(totalQueues)}
-          hint="numero de colas"
-          icon={AlertOctagon}
-        />
+        <StatsCard label={messages.pulse.stats.cpu.label} value={metrics ? `${metrics.cpuUsage}%` : (brokerMetricsQuery.isLoading ? messages.pulse.loadingBrokerMetrics : "-")} hint={messages.pulse.stats.cpu.hint} icon={Server} />
+        <StatsCard label={messages.pulse.stats.memory.label} value={metrics ? `${metrics.memoryUsage}%` : (brokerMetricsQuery.isLoading ? messages.pulse.loadingBrokerMetrics : "-")} hint={messages.pulse.stats.memory.hint} icon={DatabaseZap} />
+        <StatsCard label={messages.pulse.stats.totalMessages.label} value={metrics ? String(metrics.totalMessages) : String(totalMessages)} hint={messages.pulse.stats.totalMessages.hint} icon={Activity} />
+        <StatsCard label={messages.pulse.stats.queues.label} value={metrics ? String(metrics.queueCount) : String(totalQueues)} hint={messages.pulse.stats.queues.hint} icon={AlertOctagon} />
       </section>
 
       <section className="grid flex-none gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StatsCard
-          label="Backlog"
-          value={String(backlogQueues)}
-          hint="colas con mensajes pendientes"
-          icon={DatabaseZap}
-        />
-        <StatsCard
-          label="DLQ"
-          value={String(dlqQueues)}
-          hint="colas detectadas como dead letter"
-          icon={Activity}
-        />
-        <StatsCard
-          label="Criticas"
-          value={String(criticalQueues)}
-          hint="backlog alto o sin consumidores"
-          icon={AlertOctagon}
-        />
-        <StatsCard
-          label="Warnings"
-          value={String(warningQueues)}
-          hint="colas con crecimiento o tension"
-          icon={AlertOctagon}
-        />
+        <StatsCard label={messages.pulse.stats.backlog.label} value={String(backlogQueues)} hint={messages.pulse.stats.backlog.hint} icon={DatabaseZap} />
+        <StatsCard label={messages.pulse.stats.dlq.label} value={String(dlqQueues)} hint={messages.pulse.stats.dlq.hint} icon={Activity} />
+        <StatsCard label={messages.pulse.stats.critical.label} value={String(criticalQueues)} hint={messages.pulse.stats.critical.hint} icon={AlertOctagon} />
+        <StatsCard label={messages.pulse.stats.warnings.label} value={String(warningQueues)} hint={messages.pulse.stats.warnings.hint} icon={AlertOctagon} />
       </section>
 
       <section className="min-h-0 flex-1">
@@ -255,30 +114,23 @@ function QueueDashboardContent({
           <CardHeader className="gap-2 border-b border-[color:var(--border)] pb-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle>Colas a revisar</CardTitle>
-                <CardDescription>
-                  Colas con backlog o estado no saludable.
-                </CardDescription>
+                <CardTitle>{messages.pulse.reviewTitle}</CardTitle>
+                <CardDescription>{messages.pulse.reviewDescription}</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={criticalQueues > 0 ? "critical" : "neutral"}>{criticalQueues} criticas</Badge>
-                <Badge variant={dlqQueues > 0 ? "warning" : "neutral"}>{dlqQueues} DLQ</Badge>
-                <Badge variant="neutral">{queuesToReview.length} visibles</Badge>
+                <Badge variant={criticalQueues > 0 ? "critical" : "neutral"}>{criticalQueues} {messages.pulse.badges.critical}</Badge>
+                <Badge variant={dlqQueues > 0 ? "warning" : "neutral"}>{dlqQueues} {messages.pulse.badges.dlq}</Badge>
+                <Badge variant="neutral">{queuesToReview.length} {messages.pulse.badges.visible}</Badge>
               </div>
             </div>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 overflow-hidden pt-5">
             {queuesToReview.length === 0 ? (
-              <div className="app-empty-state flex min-h-0 h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                No hay colas con backlog ni alertas activas en este momento.
-              </div>
+              <div className="app-empty-state flex min-h-0 h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">{messages.pulse.noReviewQueues}</div>
             ) : (
               <div className="app-scroll-y grid h-full min-h-0 gap-3 pr-1 md:grid-cols-2 xl:grid-cols-3">
                 {queuesToReview.map((queue) => (
-                  <div
-                    key={queue.name}
-                    className="app-panel-soft flex flex-col gap-3 p-3"
-                  >
+                  <div key={queue.name} className="app-panel-soft flex flex-col gap-3 p-3">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 space-y-1">
@@ -290,26 +142,13 @@ function QueueDashboardContent({
                         </div>
                         <QueueHealthBadge status={queue.status} />
                       </div>
-
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Mensajes</p>
-                          <p className="font-medium text-foreground">{queue.messageCount}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Consumidores</p>
-                          <p className="font-medium text-foreground">{queue.consumerCount}</p>
-                        </div>
+                        <div><p className="text-muted-foreground">{messages.pulse.messages}</p><p className="font-medium text-foreground">{queue.messageCount}</p></div>
+                        <div><p className="text-muted-foreground">{messages.pulse.consumers}</p><p className="font-medium text-foreground">{queue.consumerCount}</p></div>
                       </div>
                     </div>
-
                     <div className="mt-1 flex items-center justify-end gap-3 border-t border-[color:var(--border)] pt-2">
-                      <a
-                        href={`/explorer?queue=${encodeURIComponent(queue.name)}`}
-                        className="text-xs font-medium text-muted-foreground transition hover:text-primary"
-                      >
-                        Abrir en Explorer
-                      </a>
+                      <a href={`/explorer?queue=${encodeURIComponent(queue.name)}`} className="text-xs font-medium text-muted-foreground transition hover:text-primary">{messages.pulse.openInExplorer}</a>
                     </div>
                   </div>
                 ))}
@@ -323,20 +162,7 @@ function QueueDashboardContent({
 }
 
 export default function QueueDashboard(props: QueueDashboardProps) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000,
-          },
-        },
-      }),
-  );
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <QueueDashboardContent {...props} />
-    </QueryClientProvider>
-  );
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 1000 } } }));
+  return <I18nProvider locale={props.locale}><QueryClientProvider client={queryClient}><QueueDashboardContent {...props} /></QueryClientProvider></I18nProvider>;
 }
+

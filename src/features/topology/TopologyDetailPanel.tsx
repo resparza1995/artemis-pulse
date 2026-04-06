@@ -1,5 +1,6 @@
 import { ArrowRight, ExternalLink } from "lucide-react";
 import type { TopologyNode } from "./types";
+import { useI18n } from "../../i18n/react";
 
 type TopologyDetailPanelProps = {
   selectedNode: TopologyNode | null;
@@ -7,17 +8,17 @@ type TopologyDetailPanelProps = {
   relatedOutgoing: TopologyNode[];
 };
 
-function renderStatusLabel(status: TopologyNode["status"]) {
+function renderStatusLabel(status: TopologyNode["status"], messages: ReturnType<typeof useI18n>["messages"]) {
   if (status === "healthy") {
-    return "Healthy";
+    return messages.common.healthy;
   }
   if (status === "warning") {
-    return "Warning";
+    return messages.common.warning;
   }
   if (status === "critical") {
-    return "Critical";
+    return messages.common.critical;
   }
-  return "Inactive";
+  return messages.common.inactive;
 }
 
 export function TopologyDetailPanel({
@@ -25,11 +26,13 @@ export function TopologyDetailPanel({
   relatedIncoming,
   relatedOutgoing,
 }: TopologyDetailPanelProps) {
+  const { messages } = useI18n();
+
   if (!selectedNode) {
     return (
       <aside className="app-panel min-h-0 w-full max-w-[360px] overflow-hidden p-4">
         <div className="app-empty-state flex h-full min-h-[240px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
-          Selecciona un nodo para ver tipo, estado y relaciones inmediatas.
+          {messages.topology.noSelection}
         </div>
       </aside>
     );
@@ -45,7 +48,7 @@ export function TopologyDetailPanel({
       <div className="flex h-full min-h-0 flex-col gap-4">
         <header className="space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Detalle
+            {messages.topology.detail}
           </p>
           <h2 className="text-lg font-semibold text-foreground">{selectedNode.label}</h2>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -53,31 +56,31 @@ export function TopologyDetailPanel({
               {selectedNode.type}
             </span>
             <span className="rounded-full border border-[var(--border)] px-2 py-1 uppercase tracking-[0.14em]">
-              {renderStatusLabel(selectedNode.status)}
+              {renderStatusLabel(selectedNode.status, messages)}
             </span>
           </div>
         </header>
 
         <section className="app-panel-inset space-y-2 p-3 text-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Metadatos
+            {messages.topology.metadata}
           </p>
           <p className="text-muted-foreground">id: {selectedNode.id}</p>
           {selectedNode.meta?.routingType ? (
-            <p className="text-muted-foreground">routing: {selectedNode.meta.routingType}</p>
+            <p className="text-muted-foreground">{messages.topology.routing}: {selectedNode.meta.routingType}</p>
           ) : null}
           {typeof selectedNode.meta?.backlog === "number" ? (
-            <p className="text-muted-foreground">backlog: {selectedNode.meta.backlog}</p>
+            <p className="text-muted-foreground">{messages.topology.backlog}: {selectedNode.meta.backlog}</p>
           ) : null}
           {typeof selectedNode.meta?.consumerCount === "number" ? (
-            <p className="text-muted-foreground">consumers: {selectedNode.meta.consumerCount}</p>
+            <p className="text-muted-foreground">{messages.topology.consumers}: {selectedNode.meta.consumerCount}</p>
           ) : null}
-          {selectedNode.meta?.isDlq ? <p className="text-warning">DLQ habilitada</p> : null}
+          {selectedNode.meta?.isDlq ? <p className="text-warning">{messages.topology.dlqEnabled}</p> : null}
         </section>
 
         <section className="app-panel-inset min-h-0 flex-1 space-y-3 overflow-hidden p-3 text-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Relaciones inmediatas
+            {messages.topology.immediateRelations}
           </p>
 
           <div className="space-y-1 overflow-y-auto">
@@ -89,7 +92,7 @@ export function TopologyDetailPanel({
                 </p>
               ))
             ) : (
-              <p className="text-muted-foreground/80">Sin relaciones de entrada.</p>
+              <p className="text-muted-foreground/80">{messages.topology.noIncoming}</p>
             )}
           </div>
 
@@ -102,7 +105,7 @@ export function TopologyDetailPanel({
                 </p>
               ))
             ) : (
-              <p className="text-muted-foreground/80">Sin relaciones de salida.</p>
+              <p className="text-muted-foreground/80">{messages.topology.noOutgoing}</p>
             )}
           </div>
         </section>
@@ -113,7 +116,7 @@ export function TopologyDetailPanel({
             className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--primary-border)] bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] transition hover:bg-[var(--primary-hover)]"
           >
             <ExternalLink className="h-4 w-4" />
-            Abrir en Explorer
+            {messages.topology.openInExplorer}
           </a>
         ) : null}
       </div>

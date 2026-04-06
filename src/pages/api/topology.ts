@@ -1,13 +1,24 @@
-import type { APIRoute } from "astro";
+﻿import type { APIRoute } from "astro";
+import { getLocaleFromRequest, getMessages } from "../../i18n";
 import { listQueues } from "../../lib/artemis";
 import { buildTopologyGraph } from "../../lib/topology";
 import type { TopologyResponse } from "../../features/topology/types";
 
-export const GET: APIRoute = async () => {
+function resolveMessages(request: Request) {
+  return getMessages(
+    getLocaleFromRequest({
+      cookie: request.headers.get("cookie"),
+      acceptLanguage: request.headers.get("accept-language"),
+    }),
+  );
+}
+
+export const GET: APIRoute = async ({ request }) => {
+  const messages = resolveMessages(request);
+
   try {
     const queues = await listQueues();
-    const lastUpdatedAt =
-      queues[0]?.lastUpdatedAt ?? new Date().toISOString();
+    const lastUpdatedAt = queues[0]?.lastUpdatedAt ?? new Date().toISOString();
     const graph = buildTopologyGraph({ queues, nowIso: lastUpdatedAt });
 
     const payload: TopologyResponse = {
@@ -28,7 +39,7 @@ export const GET: APIRoute = async () => {
     return new Response(
       JSON.stringify({
         error: "TOPOLOGY_FETCH_FAILED",
-        message: "No se pudo construir la topologia del broker.",
+        message: messages.topology.fetchError,
       }),
       {
         status: 502,
