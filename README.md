@@ -39,6 +39,25 @@ The app is available at `http://localhost:4321`.
 
 On first launch, the app uses internal default values. From the `Settings` icon in the header, you can configure the connection to Artemis and this data will be persisted in `data/settings.json`.
 
+## Docker Hub
+
+You can run Artemis Pulse directly from Docker Hub without downloading the source code:
+Download the image:
+
+```bash
+docker pull fytta/artemis-pulse:latest
+```
+
+Run it:
+
+```bash
+docker run -p 4321:4321 -v artemis-pulse-data:/app/data fytta/artemis-pulse:latest
+```
+
+Then open `http://localhost:4321`.
+
+The mounted volume preserves `data/settings.json`, so the Artemis connection configured from the `Settings` modal survives container restarts.
+
 ## Docker Compose
 
 The repository includes `docker-compose.yml` to start:
