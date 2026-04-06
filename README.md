@@ -7,10 +7,24 @@ The app is organised around three views:
 - `Explorer`: day-to-day management of addresses, queues and messages.
 - `Topology`: a visual map of the broker and its relationships.
 
-## Local startup
+📷 Screenshots [here](docs/app-preview.md)  
 
-1. Install dependencies:
+## Features
 
+- **Real-time Explorer**: Inspect queues, addresses, counters (consumers, messages) and payloads, displayed in a structured format.
+- **Broker Management**: Create and delete *Addresses/Queues* (including cascading deletes) from the UI.
+- **Message Operations**: *Publish*, *Consume* as a temporary consumer, and queue purging (*Purge*).
+- **Advanced DLQ Management (Incident Resolution)**: 
+  - Intelligent automatic banner when messages are in the DLQ.
+  - *Retry* / *Retry All*: Automatically re-queue failed messages to their original destination.
+  - *Move* / *Move All*: Move problematic messages to secondary processing queues.
+- **Topology Dashboard**: Interactive visual map showing the relationships, health and routing of the entire broker.
+
+---
+
+## Run local
+
+1. Install dependencies [Bun](https://bun.sh/):
 ```bash
 bun install
 ```
