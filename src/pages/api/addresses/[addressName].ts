@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { deleteAddress } from "../../../lib/artemis";
-import { DemoGuardError, enforceDemoPolicy } from "../../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../../lib/jolokia";
 
 export const DELETE: APIRoute = async ({ params, request }) => {
@@ -26,12 +25,6 @@ export const DELETE: APIRoute = async ({ params, request }) => {
     const decodedAddress = decodeURIComponent(addressName);
     const force = new URL(request.url).searchParams.get("force") === "true";
 
-    enforceDemoPolicy({
-      request,
-      action: "delete-address",
-      resources: [decodedAddress],
-    });
-
     const result = await deleteAddress(decodedAddress, force);
 
     return new Response(JSON.stringify(result), {
@@ -42,11 +35,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof DemoGuardError
-      ? error.statusCode
-      : error instanceof JolokiaRequestError
-        ? error.statusCode
-        : 502;
+    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
     const message =
       error instanceof Error
         ? error.message

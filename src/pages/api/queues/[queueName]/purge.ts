@@ -1,9 +1,8 @@
 import type { APIRoute } from "astro";
 import { JolokiaRequestError } from "../../../../lib/jolokia";
 import { purgeQueue } from "../../../../lib/artemis";
-import { DemoGuardError, enforceDemoPolicy } from "../../../../lib/demo-guard/policy";
 
-export const POST: APIRoute = async ({ params, request }) => {
+export const POST: APIRoute = async ({ params }) => {
   const queueName = params.queueName;
 
   if (!queueName) {
@@ -25,12 +24,6 @@ export const POST: APIRoute = async ({ params, request }) => {
   try {
     const decodedQueueName = decodeURIComponent(queueName);
 
-    enforceDemoPolicy({
-      request,
-      action: "purge",
-      resources: [decodedQueueName],
-    });
-
     const result = await purgeQueue(decodedQueueName);
 
     return new Response(JSON.stringify(result), {
@@ -41,11 +34,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof DemoGuardError
-      ? error.statusCode
-      : error instanceof JolokiaRequestError
-        ? error.statusCode
-        : 502;
+    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
     const message =
       error instanceof Error
         ? error.message

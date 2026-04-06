@@ -10,8 +10,7 @@
     "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
     "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
-    "test": "bun test",
-    "demo:simulator": "bun run tools/demo-simulator/server.ts"
+    "test": "bun test"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.3",

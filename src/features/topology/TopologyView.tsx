@@ -25,7 +25,6 @@ type TopologyUiState = {
 };
 
 const STORAGE_KEY = "artemis-pulse.topology.ui.v1";
-const TOPOLOGY_SELECTOR_STRESS_ITEMS = 0;
 
 async function fetchTopology() {
   const response = await fetch("/api/topology", {
@@ -252,29 +251,13 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
     () => graph.nodes.filter((node) => node.type === "address").sort((left, right) => left.label.localeCompare(right.label)),
     [graph.nodes],
   );
-  const selectorAddressNodes = useMemo(() => {
-    if (TOPOLOGY_SELECTOR_STRESS_ITEMS <= 0) {
-      return addressNodes;
-    }
-
-    const synthetic = Array.from({ length: TOPOLOGY_SELECTOR_STRESS_ITEMS }, (_, index) => ({
-      id: `stress-address-${String(index + 1).padStart(3, "0")}`,
-      type: "address" as const,
-      label: `demo.address.${String(index + 1).padStart(3, "0")}`,
-      status: "healthy" as const,
-      position: { x: 0, y: 0 },
-      meta: {},
-    }));
-
-    return [...addressNodes, ...synthetic].sort((left, right) => left.label.localeCompare(right.label));
-  }, [addressNodes]);
   const filteredAddressNodes = useMemo(() => {
     const query = addressSearch.trim().toLowerCase();
     if (!query) {
-      return selectorAddressNodes;
+      return addressNodes;
     }
-    return selectorAddressNodes.filter((node) => node.label.toLowerCase().includes(query));
-  }, [selectorAddressNodes, addressSearch]);
+    return addressNodes.filter((node) => node.label.toLowerCase().includes(query));
+  }, [addressNodes, addressSearch]);
   const addressVirtualizer = useVirtualizer({
     count: filteredAddressNodes.length,
     getScrollElement: () => addressListParentRef.current,
@@ -371,7 +354,7 @@ function TopologyViewContent({ pollIntervalMs }: TopologyViewContentProps) {
         {addressNodes.length > 0 ? (
           <details className="app-panel-soft relative rounded-2xl px-3 py-2">
             <summary className="list-none cursor-pointer text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Addresses ({selectorAddressNodes.length}) · Colapsadas ({collapsedAddressIds.size})
+              Addresses ({addressNodes.length}) · Colapsadas ({collapsedAddressIds.size})
             </summary>
             <div className="absolute right-0 top-[calc(100%+0.5rem)] z-20 w-[360px] max-w-[90vw] rounded-2xl border border-[var(--border)] bg-[var(--surface-overlay)] p-3 shadow-[var(--shadow-overlay)]">
               <Input

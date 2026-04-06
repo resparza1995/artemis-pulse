@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
 import { createQueue, listQueues } from "../../lib/artemis";
-import { DemoGuardError, enforceDemoPolicy } from "../../lib/demo-guard/policy";
 import { JolokiaRequestError } from "../../lib/jolokia";
 
 type CreateQueuePayload = {
@@ -62,12 +61,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    enforceDemoPolicy({
-      request,
-      action: "create-queue",
-      resources: [payload.address ?? "", payload.queueName ?? ""],
-    });
-
     const queue = await createQueue({
       address: payload.address ?? "",
       queueName: payload.queueName ?? "",
@@ -83,11 +76,7 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error: unknown) {
-    const status = error instanceof DemoGuardError
-      ? error.statusCode
-      : error instanceof JolokiaRequestError
-        ? error.statusCode
-        : 502;
+    const status = error instanceof JolokiaRequestError ? error.statusCode : 502;
     const message =
       error instanceof Error
         ? error.message
